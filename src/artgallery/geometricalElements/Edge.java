@@ -138,7 +138,13 @@ public class Edge implements Comparable<Edge> {
 		if (this.equals(edge)) {
 			return 0;
 		} else {
-			return this.getId().compareTo(edge.getId());
+			int result = Integer.compare(firstVertex.getId(), edge.firstVertex.getId());
+
+			if (result == 0) {
+				return result;
+			} else {
+				return Integer.compare(secondVertex.getId(), edge.secondVertex.getId());
+			}
 		}
 	}
 
