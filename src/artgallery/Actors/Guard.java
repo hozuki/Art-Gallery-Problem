@@ -2,6 +2,7 @@ package artgallery.Actors;
 import java.util.ArrayList;
 
 import artgallery.geometricalElements.Edge;
+import artgallery.geometricalElements.Polygon;
 import artgallery.geometricalElements.RoutePoint;
 
 public class Guard extends Actor{
@@ -11,6 +12,7 @@ public class Guard extends Actor{
 	private int orientation;
 	private int maxSpeed;
 	private int observationTime;
+	private ArrayList<Polygon> visibilityPolygon = new ArrayList<Polygon>();
 	private ArrayList<RoutePoint> routePoints = new ArrayList<RoutePoint>();
 	private ArrayList<Edge> routeEdges = new ArrayList<Edge>();
 	private int routeLength;
@@ -109,5 +111,11 @@ public class Guard extends Actor{
 	}
 	public void setY(int y) {
 		this.y = y;
+	}
+	public ArrayList<Polygon> getVisibilityPolygon() {
+		return visibilityPolygon;
+	}
+	public void setVisibilityPolygon(ArrayList<Polygon> visibilityPolygon) {
+		this.visibilityPolygon = visibilityPolygon;
 	}
 }

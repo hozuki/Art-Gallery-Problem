@@ -20,7 +20,7 @@ public class RoutePoint {
 	}
 	
 	public Vertex toVertex(){
-		return new Vertex(X, Y, 0, 0);
+		return new Vertex(X, Y, -1, 0, 0);
 	}
 		
 	public int getX() {

@@ -9,11 +9,6 @@ public class Hole {
 	public Hole(){
 		this.vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<Edge>();
-		for(int i = 0; i < vertices.size(); ++i){
-		    Vertex v1 = vertices.get(i);
-		    Vertex v2 = vertices.get((i+1) % vertices.size());
-		    edges.add(new Edge(v1, v2));
-		}
 	}
 	
 	public Hole(ArrayList<Vertex> vertices){
@@ -45,8 +40,6 @@ public class Hole {
 			    Vertex v2 = vertices.get((i+1) % vertices.size());
 			    Edge edge = new Edge(v1, v2);
 			    edges.add(edge);
-			    v1.addInEdge(edge);
-			    v2.addInEdge(edge);
 			}
 		}
 	}

@@ -3,14 +3,16 @@ import java.util.ArrayList;
 
 import artgallery.Actors.Guard;
 import artgallery.Actors.Thief;
+import artgallery.geometricalElements.Edge;
 import artgallery.geometricalElements.Polygon;
+import artgallery.geometricalElements.Vertex;
 
 public class GalleryModel {
 	private ArrayList<Guard> guards = new ArrayList<Guard>();
 	private ArrayList<Thief> thieves = new ArrayList<Thief>();
 	private Polygon galleryPolygon;
 	private boolean actors = false;
-	private boolean legend = false;
+	private boolean legend = true;
 	private boolean guardsPaths = false;
 	private boolean thievesPaths = false;
 	private boolean triangulation = false;
@@ -41,12 +43,19 @@ public class GalleryModel {
 		this.globalTime = globalTime;
 	}
 	
-	/* Callable method to begin the sequence of operation required to triangulate the art gallery.
-	 * 1) Decompose the gallery into trapezoids.
-	 * 2) Decompose the trapezoids into Y-Monotone polygons.
-	 * 3) Triangulate the Y-Monotone polygons.
-	 * 4) Merge results to obtain triangulation mesh.
-	 */
+	public ArrayList<Edge> getTrapezoidalEdges(){
+		GeometricAlgorithms GA = new GeometricAlgorithms();
+		GA.trapezoidalDecomposition(galleryPolygon);
+		return GA.trapezoidalEdges;
+	}
+	
+	public ArrayList<Polygon> computeGuardVisibility(int i) {
+		GeometricAlgorithms GA = new GeometricAlgorithms();
+		Guard guard = this.guards.get(i);
+		Vertex guardPosition = new Vertex(guard.getX(), guard.getY());
+		guard.setVisibilityPolygon(GA.computeVisibilityPolygon(guardPosition, galleryPolygon));
+		return guard.getVisibilityPolygon();
+	}
 	
 	public void toggleActors() {
 		this.actors = this.actors == true ? false : true;

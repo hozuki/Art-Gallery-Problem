@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import artgallery.GeometricAlgorithms;
+import artgallery.Actors.Guard;
 
 public class Polygon {
 
@@ -13,7 +14,6 @@ public class Polygon {
 	private ArrayList<Hole> holes = new ArrayList<Hole>();
 	private ArrayList<Polygon> triangulation = null;
 	private Map<Vertex, Integer> chainMap = new HashMap<Vertex, Integer>();
-	private boolean visibilityComputed;
 
 	public Polygon() {
 	}
@@ -68,35 +68,53 @@ public class Polygon {
 		return edges;
 	}
 
+	public ArrayList<Edge> getEdgesAndHoles() {
+		ArrayList<Edge> allEdges = new ArrayList<Edge>(edges);
+		for (Hole h : holes) {
+			allEdges.addAll(new ArrayList<Edge>(h.getEdges()));
+		}
+		return allEdges;
+	}
+
+	public Vertex getMatchingVertex(Vertex vertex) {
+		for (Vertex localVertex : this.getVerticesAndHoles()) {
+			if (localVertex.equals(vertex)) {
+				return localVertex;
+			}
+		}
+		return null;
+
+	}
+
 	public void generateEdges() {
+		//Construct the edges for the gallery bounds by connecting points clockwise.
 		for (int i = 0; i < vertices.size(); ++i) {
 			Vertex v1 = vertices.get(i);
 			Vertex v2 = vertices.get((i + 1) % vertices.size());
-			Edge edge = new Edge(v1, v2);
-			this.edges.add(edge);
-			v1.addInEdge(edge);
-			v2.addInEdge(edge);
+			this.edges.add(new Edge(v1, v2));
+			v1.addNeighbor(v2);
+			v2.addNeighbor(v1);
+		}
+
+		//Connect edges to their neighbors
+		for (int i = 0; i < edges.size(); ++i) {
+			Edge e1 = edges.get(i);
+			Edge e2 = edges.get((i + 1) % edges.size());
+			e1.addNeighbor(e2);
+			e2.addNeighbor(e1);
 		}
 	}
 
 	public void computeTriangulation() {
-		if (this.triangulation == null) {
+		if (this.triangulation.isEmpty()) {
 			GeometricAlgorithms GA = new GeometricAlgorithms();
-			triangulation = GA.triangulateMonotonePolygon(this);
+			triangulation = GA.computeTriangulation(this);
 		}
 	}
 
-	public void computeVisibility() {
-		if (!visibilityComputed) {
-			GeometricAlgorithms GA = new GeometricAlgorithms();
-
-			for (Vertex v : vertices) {
-				ArrayList<Polygon> visibilityPolygon = GA.computeVisibilityPolygon(v, this);
-				v.setVisibilityPolygon(visibilityPolygon);
-			}
-
-			visibilityComputed = true;
-		}
+	public void computeVisibility(Vertex v) {
+		GeometricAlgorithms GA = new GeometricAlgorithms();
+		v.setVisibilityPolygon(GA.computeVisibilityPolygon(v, this));
 	}
 
 	public ArrayList<Polygon> getTriangulation() {
@@ -111,7 +129,8 @@ public class Polygon {
 		double maxDistance = 0;
 		for (Vertex v1 : vertices) {
 			for (Vertex v2 : vertices) {
-				double tempDistance = Math.sqrt(Math.pow(v1.getY() - v2.getY(), 2) + Math.pow((v1.getX() - v2.getX()), 2));
+				double tempDistance = Math
+						.sqrt(Math.pow(v1.getY() - v2.getY(), 2) + Math.pow((v1.getX() - v2.getX()), 2));
 				if (tempDistance > maxDistance) {
 					maxDistance = tempDistance;
 				}
@@ -134,7 +153,7 @@ public class Polygon {
 
 	// Modified the vertices positions to avoid horizontal lines in the polygon.
 	public void tiltHorizontals() {
-		int lastY = Integer.MAX_VALUE;
+		double lastY = Integer.MAX_VALUE;
 		for (Vertex v : vertices) {
 			if (lastY == Integer.MAX_VALUE) {
 				lastY = v.getY();
@@ -176,5 +195,44 @@ public class Polygon {
 		}
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof Polygon)) {
+			return false;
+		}
+		if (o instanceof Polygon) {
+			boolean equal = true;
+			boolean contained = false;
+			for (Edge e1 : this.getEdges()) {
+				for (Edge e2 : ((Polygon) o).getEdges()) {
+					if (e2.equals(e1))
+						contained = true;
+				}
+				equal = equal & contained;
+			}
+			for (Edge e2 : ((Polygon) o).getEdges()) {
+				contained = false;
+				for (Edge e1 : this.getEdges()) {
+					if (e1.equals(e2))
+						contained = true;
+				}
+				equal = equal & contained;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public Polygon clone() {
+		Polygon clone = new Polygon();
+		ArrayList<Vertex> cloneVertices = new ArrayList<Vertex>();
+		for (Vertex v : this.getVertices()) {
+			cloneVertices.add(v.clone());
+		}
+		clone.setVertices(cloneVertices);
+		clone.setHoles(new ArrayList<Hole>(this.getHoles()));
+		clone.generateEdges();
+		return clone;
+	}
 
 }

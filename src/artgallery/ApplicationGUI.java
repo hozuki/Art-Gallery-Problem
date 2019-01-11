@@ -1,4 +1,5 @@
 package artgallery;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.EventQueue;
@@ -16,6 +17,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -48,12 +50,12 @@ public class ApplicationGUI implements Runnable {
 	private JTextField tfHoles;
 	private JTextField tfGuards;
 	private JTextField tfThieves;
-	private JCheckBox cbDispThiefPt;
-	private JCheckBox cbDispGuardPt;
-	private JCheckBox cbDispTriangulation;
-	private JCheckBox cbLoopPaths;
-	private JCheckBox cbDispVisibility;
 	private JCheckBox cbDispActors;
+	private JCheckBox cbDispGuardPt;
+	private JCheckBox cbLoopPaths;
+	private JCheckBox cbDispThiefPt;
+	private JCheckBox cbDispTriangulation;
+	private JCheckBox cbDispVisibility;
 	private Thread animator;
 	private boolean running = false;
 	private int seconder = 0;
@@ -89,20 +91,20 @@ public class ApplicationGUI implements Runnable {
 	private void initialize() {
 		frame = new JFrame();
 		frame.setTitle("Group 3 - Art Gallery Simulator");
-		frame.setBounds(100, 100, 800, 600);
+		frame.setBounds(100, 100, 1000, 700);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.X_AXIS));
 
 		JSplitPane splitPane = new JSplitPane();
 		splitPane.setEnabled(false);
 		splitPane.setResizeWeight(1.0);
-		splitPane.setDividerLocation(550);
+		splitPane.setDividerLocation(750);
 		frame.getContentPane().add(splitPane);
 
 		JSplitPane splitPane_1 = new JSplitPane();
 		splitPane_1.setResizeWeight(1.0);
 		splitPane_1.setOrientation(JSplitPane.VERTICAL_SPLIT);
-		splitPane_1.setDividerLocation(450);
+		splitPane_1.setDividerLocation(500);
 		splitPane.setLeftComponent(splitPane_1);
 
 		canvas = new GalleryView();
@@ -293,13 +295,13 @@ public class ApplicationGUI implements Runnable {
 		cbDispTriangulation.setBounds(6, 35, 190, 23);
 		cbDispTriangulation.addActionListener(new ToggleDisplay("triangulation"));
 		panel_2.add(cbDispTriangulation);
-		
+
 		cbDispVisibility = new JCheckBox("Show Visibility Polygons");
 		cbDispVisibility.setEnabled(false);
 		cbDispVisibility.setBounds(6, 55, 190, 23);
 		cbDispVisibility.addActionListener(new ToggleDisplay("visibility"));
 		panel_2.add(cbDispVisibility);
-		
+
 		cbDispActors = new JCheckBox("Show Actors");
 		cbDispActors.setEnabled(false);
 		cbDispActors.setBounds(6, 15, 153, 23);
@@ -332,197 +334,208 @@ public class ApplicationGUI implements Runnable {
 		executionBtnsPanel.add(btnRestart);
 	}
 
+	private static String paths(final String first, final String... more) {
+		return Paths.get(first, more).toString();
+	}
+
 	private void loadInput() {
-		String directory = Paths.get(System.getProperty("user.dir"), "data/sampleInputs/").toString();
-		String file = "AGS2";
+		String directory = paths(System.getProperty("user.dir"), "data/sampleInputs/");
+		JFileChooser fileChooser = new JFileChooser(directory);
 		BufferedReader br = null;
 		String line = "";
 		String separator = ",";
+		int lastHole = 0;
+		int lastIndex = 0;
 
+		//Array to add up objects while reading and later initialize the gallery.
 		ArrayList<Vertex> vertices = new ArrayList<Vertex>();
 		ArrayList<Hole> holes = new ArrayList<Hole>();
 		ArrayList<Guard> guards = new ArrayList<Guard>();
 		ArrayList<Thief> thieves = new ArrayList<Thief>();
 
 		// Load Gallery Structure File
-		try {
-			txtAreaStatus.append("Attempting to load gallery file...\n");
-			br = new BufferedReader(new FileReader(Paths.get(directory, file).toString()));
-			int count = 1;
-			int n, h, e, a;
-			int g, v, t, d;
-			n = h = e = a = g = v = t = d = 0;
+		//if (fileChooser.showOpenDialog(fileChooser) == JFileChooser.APPROVE_OPTION) {
+		if (true) {
+			//String fileName = fileChooser.getSelectedFile().getName();
+			//fileNumber = fileName.charAt(fileName.length() - 1);
+			String fileName = "AGS6";
+			char fileNumber = '6';
+			try {
+				txtAreaStatus.append("Attempting to load gallery file [" + directory + fileName + "]\n");
+				br = new BufferedReader(new FileReader(paths(directory, fileName)));
+				int count = 1;
+				int n, h, e, a;
+				int g, v, t, d;
+				n = h = e = a = g = v = t = d = 0;
 
-			while ((line = br.readLine()) != null) {
-				if (count == 1) {
+				while ((line = br.readLine()) != null) {
 					String[] values = line.replaceAll(" ", "").split(separator);
-					if (values.length != 4) {
-						throw new IllegalArgumentException();
-					}
-					n = Integer.parseInt(values[0]);
-					h = Integer.parseInt(values[1]);
-					e = Integer.parseInt(values[2]);
-					a = Integer.parseInt(values[3]);
-					if (n < 3 || h < 0 || e < 1 || a < 1) {
-						throw new IllegalArgumentException();
-					}
-				} else if (count == 2) {
-					if (h > 0) {
-						String[] values = line.replaceAll(" ", "").split(separator);
-						for (int i = 0; i < values.length; ++i) {
-							Hole tempHole = new Hole();
-							tempHole.setSize(Integer.parseInt(values[i]));
-							holes.add(tempHole);
+					if (count == 1) {
+						if (values.length != 4) {
+							throw new IllegalArgumentException();
 						}
-					}
-				} else if (count == 3) {
-					String[] values = line.replaceAll(" ", "").split(separator);
-					g = Integer.parseInt(values[0]);
-					v = Integer.parseInt(values[1]);
-					t = Integer.parseInt(values[2]);
-					d = Integer.parseInt(values[3]);
-					if (g < 1 || v < 1 || t < 1 || d < 0) {
-						throw new IllegalArgumentException();
-					}
-				} else if (count > 3 && count <= 3 + n) {
-					String[] values = line.replaceAll(" ", "").split(separator);
-					Vertex tempVertex = new Vertex(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
-							Integer.parseInt(values[2]), Integer.parseInt(values[3]));
-					vertices.add(tempVertex);
-				} else {
-					for (int i = 0; i < holes.size(); ++i) {
-						if (count <= 3 + n + (i + 1) * holes.get(i).getSize()) {
-							String[] values = line.replaceAll(" ", "").split(separator);
-							Vertex tempVertex = new Vertex(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
-									Integer.parseInt(values[2]), 0);
-							holes.get(i).addVertex(tempVertex);							
-							break;
+						n = Integer.parseInt(values[0]);
+						h = Integer.parseInt(values[1]);
+						e = Integer.parseInt(values[2]);
+						a = Integer.parseInt(values[3]);
+						if (n < 3 || h < 0 || e < 1 || a < 1) {
+							throw new IllegalArgumentException();
 						}
-					}
-				}
-				count++;
-			}
-			txtAreaStatus.append("File succesfully loaded!\n");
-			Polygon galleryPolygon = new Polygon(vertices, holes);
-			this.gallery = new GalleryModel(galleryPolygon, t);
-			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			System.out.println("Incorrect input file format");
-		} finally {
-			if (br != null) {
-				try {
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+					} else if (count == 2) {
+						if (h > 0) {
+							for (int i = 0; i < values.length; ++i) {
+								Hole tempHole = new Hole();
+								tempHole.setSize(Integer.parseInt(values[i]));
+								holes.add(tempHole);
+							}
+						}
+					} else if (count == 3) {
+						g = Integer.parseInt(values[0]);
+						v = Integer.parseInt(values[1]);
+						t = Integer.parseInt(values[2]);
+						d = Integer.parseInt(values[3]);
+						if (g < 1 || v < 1 || t < 1 || d < 0) {
+							throw new IllegalArgumentException();
+						}
+					} else if (count > 3 && count <= 3 + n) {
+						Vertex tempVertex = new Vertex(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
+								count - 3, Integer.parseInt(values[2]), Integer.parseInt(values[3]));
+						vertices.add(tempVertex);
+					} else {
+						Hole hole = holes.get(lastHole);
+						if (count > 3 + n + lastIndex + hole.getSize()) {
+							lastIndex += hole.getSize();
+							lastHole++;
+							hole = holes.get(lastHole);
+						}
+						Vertex tempVertex = new Vertex(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
+								count - 3, Integer.parseInt(values[2]), 0);
+						hole.addVertex(tempVertex);
 
-		// Load Guard Schedule File
-		file = "GSS1";
-		try {
-			txtAreaStatus.append("Attempting to load guard schedule specification file...\n");
-			br = new BufferedReader(new FileReader(Paths.get(directory, file).toString()));
-			int count = 1;
-			int g = 0;
-			int currentGuard = -1;
-			int routeLength = 0;
-			int lastDef = 0;
-
-			while ((line = br.readLine()) != null) {
-				String[] values = line.replaceAll(" ", "").split(separator);
-				if (count == 1) {
-					if (values.length != 1) {
-						throw new IllegalArgumentException();
 					}
-					g = Integer.parseInt(values[0]);
-					for (int i = 0; i < g; ++i) {
-						Guard tempGuard = new Guard();
-						guards.add(tempGuard);
-					}
-				} else if (count == 2 || count > lastDef + guards.get(currentGuard).getRouteLength() + 1) {
-					if (values.length != 1) {
-						throw new IllegalArgumentException();
-					}
-					currentGuard++;
-					lastDef = count;
-					routeLength = Integer.parseInt(values[0]);
-					guards.get(currentGuard).setRouteLength(routeLength);
-				} else {
-					RoutePoint tempPoint = new RoutePoint(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
-							Integer.parseInt(values[2]), Integer.parseInt(values[3]));
-					guards.get(currentGuard).addPointToRoute(tempPoint);
+					count++;
 				}
-				count++;
-			}
-			gallery.setGuards(guards);
-			txtAreaStatus.append("Guard schedule succesfully loaded!\n");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			System.out.println("Incorrect input file format");
-		} finally {
-			if (br != null) {
-				try {
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
+				txtAreaStatus.append("File succesfully loaded!\n");
+				Polygon galleryPolygon = new Polygon(vertices, holes);
+				this.gallery = new GalleryModel(galleryPolygon, t);
+
+			} catch (FileNotFoundException e) {
+				txtAreaStatus.append("No gallery structure file could be found with that name :(\n");
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				System.out.println("Incorrect input file format");
+			} finally {
+				if (br != null) {
+					try {
+						br.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 				}
 			}
-		}
 
-		// Load Thief Path File
-		file = "RPS1";
-		try {
-			txtAreaStatus.append("Attempting to load thief path specification file...\n");
-			br = new BufferedReader(new FileReader(Paths.get(directory, file).toString()));
-			int count = 1;
+			// Load Guard Schedule File
+			try {
+				txtAreaStatus.append("Attempting to load guard schedule specification file...\n");
+				br = new BufferedReader(new FileReader(paths(directory, "GSS" + fileNumber)));
+				int count = 1;
+				int g = 0;
+				int currentGuard = -1;
+				int routeLength = 0;
+				int lastDef = 0;
 
-			while ((line = br.readLine()) != null) {
-				String[] values = line.replaceAll(" ", "").split(separator);
-				if (count == 1) {
-					if (values.length != 1) {
-						throw new IllegalArgumentException();
+				while ((line = br.readLine()) != null) {
+					String[] values = line.replaceAll(" ", "").split(separator);
+					if (count == 1) {
+						if (values.length != 1) {
+							throw new IllegalArgumentException();
+						}
+						g = Integer.parseInt(values[0]);
+						for (int i = 0; i < g; ++i) {
+							Guard tempGuard = new Guard();
+							guards.add(tempGuard);
+						}
+					} else if (count == 2 || count > lastDef + guards.get(currentGuard).getRouteLength() + 1) {
+						if (values.length != 1) {
+							throw new IllegalArgumentException();
+						}
+						currentGuard++;
+						lastDef = count;
+						routeLength = Integer.parseInt(values[0]);
+						guards.get(currentGuard).setRouteLength(routeLength);
+					} else {
+						RoutePoint tempPoint = new RoutePoint(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
+								Integer.parseInt(values[2]), Integer.parseInt(values[3]));
+						guards.get(currentGuard).addPointToRoute(tempPoint);
 					}
-					thieves.add(new Thief());
-				} else {
-					RoutePoint tempPoint = new RoutePoint(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
-							Integer.parseInt(values[2]), 1);
-					thieves.get(0).addPointToRoute(tempPoint);
+					count++;
 				}
-				count++;
+				gallery.setGuards(guards);
+				txtAreaStatus.append("Guard schedule succesfully loaded!\n");
+			} catch (FileNotFoundException e) {
+				txtAreaStatus.append("No guard schedule file could be found with that name :(\n");
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				System.out.println("Incorrect input file format");
+			} finally {
+				if (br != null) {
+					try {
+						br.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
 			}
-			gallery.setThieves(thieves);
-			txtAreaStatus.append("Filthy thieves succesfully loaded!\n");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			System.out.println("Incorrect input file format");
-		} finally {
-			if (br != null) {
-				try {
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
+
+			// Load Thief Path File
+			try {
+				txtAreaStatus.append("Attempting to load thief path specification file...\n");
+				br = new BufferedReader(new FileReader(paths(directory, "RPS" + fileNumber)));
+				int count = 1;
+
+				while ((line = br.readLine()) != null) {
+					String[] values = line.replaceAll(" ", "").split(separator);
+					if (count == 1) {
+						if (values.length != 1) {
+							throw new IllegalArgumentException();
+						}
+						thieves.add(new Thief());
+					} else {
+						RoutePoint tempPoint = new RoutePoint(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
+								Integer.parseInt(values[2]), 1);
+						thieves.get(0).addPointToRoute(tempPoint);
+					}
+					count++;
+				}
+				gallery.setThieves(thieves);
+				txtAreaStatus.append("Filthy thieves succesfully loaded!\n");
+			} catch (FileNotFoundException e) {
+				txtAreaStatus.append("No robber path file could be found with that name :(\n");
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				System.out.println("Incorrect input fileNumber format");
+			} finally {
+				if (br != null) {
+					try {
+						br.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		}
 
 		refreshCanvas();
+		resetControls();
 		enableControls();
-		gallery.toggleLegend();
 	}
 
 	private void refreshCanvas() {
 		canvas.updateGallery(gallery);
+		canvas.resetView();
 		tfVertices.setText("" + gallery.getGallery().getVertices().size());
 		tfEdges.setText("" + gallery.getGallery().getEdges().size());
 		tfArt.setText("" + gallery.getGallery().getVertices().stream().filter(v -> v.isArt()).count());
@@ -530,6 +543,16 @@ public class ApplicationGUI implements Runnable {
 		tfHoles.setText("" + gallery.getGallery().getHoles().size());
 		tfGuards.setText("" + gallery.getGuards().size());
 		tfThieves.setText("" + gallery.getThieves().size());
+	}
+
+	private void resetControls() {
+		cbDispTriangulation.setSelected(false);
+		cbDispActors.setSelected(false);
+		cbDispGuardPt.setSelected(false);
+		cbLoopPaths.setSelected(false);
+		cbDispThiefPt.setSelected(false);
+		cbDispTriangulation.setSelected(false);
+		cbDispVisibility.setSelected(false);
 	}
 
 	public void toggleAnimation() {
@@ -599,8 +622,8 @@ public class ApplicationGUI implements Runnable {
 			enableControls();
 		}
 	}
-	
-	private void enableControls(){
+
+	private void enableControls() {
 		cbDispGuardPt.setEnabled(true);
 		cbDispThiefPt.setEnabled(true);
 		cbDispTriangulation.setEnabled(true);
@@ -610,20 +633,24 @@ public class ApplicationGUI implements Runnable {
 		btnExecuteSimulation.setEnabled(true);
 		btnRestart.setEnabled(true);
 	}
-	
+
 	private class ToggleDisplay implements ActionListener {
 		private String type;
-		public ToggleDisplay(String t){
+
+		public ToggleDisplay(String t) {
 			this.type = t;
 		}
+
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			switch(type){
+			switch (type) {
 				case "actors":
 					gallery.toggleActors();
 					break;
 				case "guard":
 					gallery.toggleGuardsPaths();
+					break;
+				case "legend":
 					break;
 				case "thief":
 					gallery.toggleThievesPaths();
@@ -634,13 +661,11 @@ public class ApplicationGUI implements Runnable {
 				case "visibility":
 					gallery.toggleVisibility();
 					break;
-				default:
-					break;
 			}
 			canvas.repaint();
 		}
 	}
-	
+
 	private class ExecuteAnimation implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -654,13 +679,13 @@ public class ApplicationGUI implements Runnable {
 			toggleAnimation();
 		}
 	}
-	
+
 	private class RestartGallery implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			seconder = 0;
 			animator = new Thread();
-			loadInput();			
+			loadInput();
 		}
 	}
 }
