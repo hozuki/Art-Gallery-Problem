@@ -103,6 +103,15 @@ public class AVLTree<AnyType extends Comparable<? super AnyType>> {
 	}
 
 	/**
+	 * Find a specific object in the BST.
+	 * @param e
+	 * @return
+	 */
+	public AnyType find(AnyType e) {
+		return find(e, root);
+	}
+
+	/**
 	 * Find an item in the tree.
 	 * 
 	 * @param x
@@ -257,6 +266,22 @@ public class AVLTree<AnyType extends Comparable<? super AnyType>> {
 		}
 
 		return false; // No match
+	}
+
+	private AnyType find(AnyType e, AvlNode<AnyType> n) {
+		while (n != null) {
+			int compareResult = e.compareTo(n.element);
+
+			if (compareResult < 0) {
+				n = n.left;
+			} else if (compareResult > 0) {
+				n = n.right;
+			} else {
+				return n.element;
+			}
+		}
+
+		return null;
 	}
 
 	/**

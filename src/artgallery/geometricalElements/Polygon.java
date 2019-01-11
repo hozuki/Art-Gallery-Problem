@@ -1,41 +1,47 @@
 package artgallery.geometricalElements;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import artgallery.GeometricAlgorithms;
 
-public class Polygon{
+public class Polygon {
+
 	private ArrayList<Vertex> vertices = new ArrayList<Vertex>();
 	private ArrayList<Edge> edges = new ArrayList<Edge>();
 	private ArrayList<Hole> holes = new ArrayList<Hole>();
-	private ArrayList<Polygon> triangulation = new ArrayList<Polygon>();
+	private ArrayList<Polygon> triangulation = null;
 	private Map<Vertex, Integer> chainMap = new HashMap<Vertex, Integer>();
-	
-	public Polygon() {
+	private boolean visibilityComputed;
 
+	public Polygon() {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Polygon(ArrayList<?> elements){
-		if(elements.get(0) instanceof Vertex){
+	public Polygon(ArrayList<?> elements) {
+		if (elements.get(0) instanceof Vertex) {
 			this.vertices = (ArrayList<Vertex>) elements;
 			generateEdges();
-		}else if(elements.get(0) instanceof Edge){
+		} else if (elements.get(0) instanceof Edge) {
 			this.edges = (ArrayList<Edge>) elements;
-			for(Edge e : this.edges){
-				if(!this.vertices.contains(e.getFirstVertex())){this.vertices.add(e.getFirstVertex());}
-				if(!this.vertices.contains(e.getSecondVertex())){this.vertices.add(e.getSecondVertex());}
+			for (Edge e : this.edges) {
+				if (!this.vertices.contains(e.getFirstVertex())) {
+					this.vertices.add(e.getFirstVertex());
+				}
+				if (!this.vertices.contains(e.getSecondVertex())) {
+					this.vertices.add(e.getSecondVertex());
+				}
 			}
 		}
 	}
-	
+
 	public Polygon(ArrayList<Vertex> vertices, ArrayList<Hole> holes) {
 		this.vertices = vertices;
 		this.holes = holes;
 		generateEdges();
 	}
-	
+
 	public Polygon(ArrayList<Vertex> vertices, ArrayList<Edge> edges, ArrayList<Hole> holes) {
 		this.vertices = vertices;
 		this.edges = edges;
@@ -45,15 +51,15 @@ public class Polygon{
 	public ArrayList<Vertex> getVertices() {
 		return vertices;
 	}
-	
+
 	public ArrayList<Vertex> getVerticesAndHoles() {
 		ArrayList<Vertex> allVertices = new ArrayList<Vertex>(vertices);
-		for(Hole h : holes){
+		for (Hole h : holes) {
 			allVertices.addAll(new ArrayList<Vertex>(h.getVertices()));
 		}
 		return allVertices;
 	}
-	
+
 	public void setVertices(ArrayList<Vertex> vertices) {
 		this.vertices = vertices;
 	}
@@ -74,39 +80,46 @@ public class Polygon{
 	}
 
 	public void computeTriangulation() {
-		if(this.triangulation.isEmpty()){
+		if (this.triangulation == null) {
 			GeometricAlgorithms GA = new GeometricAlgorithms();
-			triangulation = GA.triangulateMonotonePolygon(this);	
+			triangulation = GA.triangulateMonotonePolygon(this);
 		}
 	}
-	
-	public void computeVisibility(){
-		if(this.triangulation.isEmpty()){
+
+	public void computeVisibility() {
+		if (!visibilityComputed) {
 			GeometricAlgorithms GA = new GeometricAlgorithms();
-			for(Vertex v : vertices) {
+
+			for (Vertex v : vertices) {
 				ArrayList<Polygon> visibilityPolygon = GA.computeVisibilityPolygon(v, this);
 				v.setVisibilityPolygon(visibilityPolygon);
 			}
+
+			visibilityComputed = true;
 		}
 	}
 
 	public ArrayList<Polygon> getTriangulation() {
+		if (triangulation == null) {
+			computeTriangulation();
+		}
+
 		return triangulation;
 	}
 
-	public double getMaxDistance(){
+	public double getMaxDistance() {
 		double maxDistance = 0;
-		for(Vertex v1 : vertices){
-			for(Vertex v2 : vertices){
-				double tempDistance = Math.sqrt(Math.pow(v1.getY() - v2.getY(), 2)  + Math.pow((v1.getX() - v2.getX()), 2));
-				if(tempDistance > maxDistance){
+		for (Vertex v1 : vertices) {
+			for (Vertex v2 : vertices) {
+				double tempDistance = Math.sqrt(Math.pow(v1.getY() - v2.getY(), 2) + Math.pow((v1.getX() - v2.getX()), 2));
+				if (tempDistance > maxDistance) {
 					maxDistance = tempDistance;
 				}
 			}
 		}
 		return maxDistance;
 	}
-	
+
 	// Bad implementation of monotone-chains.
 	public void constructChains() {
 		tiltHorizontals();
@@ -143,10 +156,10 @@ public class Polygon{
 	public void setHoles(ArrayList<Hole> holes) {
 		this.holes = holes;
 	}
-	
-	public int[] getCentroid(){
+
+	public int[] getCentroid() {
 		int[] centroid = {0, 0};
-		for(Vertex v : vertices){
+		for (Vertex v : vertices) {
 			centroid[0] += v.getX();
 			centroid[1] += v.getY();
 		}
@@ -156,9 +169,9 @@ public class Polygon{
 	}
 
 	public boolean edgeMatch(Polygon p) {
-		if(this.getEdges().containsAll(p.getEdges()) && p.getEdges().containsAll(this.getEdges())){
+		if (this.getEdges().containsAll(p.getEdges()) && p.getEdges().containsAll(this.getEdges())) {
 			return true;
-		}else{
+		} else {
 			return false;
 		}
 	}

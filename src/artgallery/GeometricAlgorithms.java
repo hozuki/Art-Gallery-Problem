@@ -1,14 +1,14 @@
 package artgallery;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Stack;
+import java.util.*;
 
 import artgallery.dataStructures.AVLTree;
 import artgallery.geometricalElements.Edge;
 import artgallery.geometricalElements.Hole;
 import artgallery.geometricalElements.Polygon;
 import artgallery.geometricalElements.Vertex;
+
+import javax.activation.MimeTypeParameterList;
 
 public class GeometricAlgorithms {
 
@@ -47,6 +47,220 @@ public class GeometricAlgorithms {
 
 	private Polygon monotonePolygonization(Polygon trapezoid) {
 		return trapezoid;
+	}
+
+	/**
+	 * Triangulate using the method: {@link #makeMonotonePolygons(Polygon)} then
+	 * {@link #triangulateMonotonePolygon(Polygon)}. Input polygon can have holes.
+	 *
+	 * @param polygon The simple polygon to triangulate
+	 * @return Triangle mesh
+	 */
+	public ArrayList<Polygon> triangulateSimplePolygon(final Polygon polygon) {
+		final ArrayList<Polygon> monotones = makeMonotonePolygons(polygon);
+		final ArrayList<Polygon> triangles = new ArrayList<>();
+
+		for (final Polygon poly : monotones) {
+			final ArrayList<Polygon> tris = triangulateMonotonePolygon(poly);
+
+			triangles.addAll(tris);
+		}
+
+		return triangles;
+	}
+
+	/**
+	 * Break down a polygon into one or more monotone polygons.
+	 *
+	 * @param polygon The polygon to break down
+	 * @return A list of monotone polygons
+	 */
+	public ArrayList<Polygon> makeMonotonePolygons(final Polygon polygon) {
+		PriorityQueue<Vertex> q = new PriorityQueue<>(GeometricAlgorithms::vertexComparator);
+
+		q.addAll(polygon.getVertices());
+
+		for (Hole hole : polygon.getHoles()) {
+			q.addAll(hole.getVertices());
+		}
+
+		AVLTree<Edge> t = new AVLTree<>();
+
+		helper = new HashMap<>();
+
+		ArrayList<Polygon> result = new ArrayList<>();
+
+		while (!q.isEmpty()) {
+			Vertex vi = q.poll();
+			VertexType vertexType = judgeVertexType(vi);
+
+			switch (vertexType) {
+				case REGULAR: {
+					// TODO: compute whether the interior is to the right of vi
+					boolean interiorIsToTheRight = Math.random() > 0.5;
+
+					if (interiorIsToTheRight) {
+						Edge ei_m1 = vi.getPreviousAssociatedEdge();
+
+						assert helper.containsKey(ei_m1);
+
+						Vertex v = helper.get(ei_m1);
+						VertexType vt = judgeVertexType(v);
+
+						if (vt == VertexType.MERGE) {
+							// TODO: insert diagonal from ei_m1 to vi
+						}
+
+						t.remove(ei_m1);
+
+						Edge ei = vi.getAssociatedEdge();
+
+						t.insert(ei);
+						helper.put(ei, vi);
+					} else {
+						Edge ej = null;
+						// TODO: search for ej
+
+						Vertex v = helper.get(ej);
+						VertexType vt = judgeVertexType(v);
+
+						if (vt == VertexType.MERGE) {
+							// TODO: insert diagonal from vi to v
+						}
+
+						helper.put(ej, vi);
+					}
+				}
+				break;
+				case START: {
+					Edge ei = vi.getAssociatedEdge();
+					t.insert(ei);
+					helper.put(ei, vi);
+				}
+				break;
+				case END: {
+					Edge ei_m1 = vi.getPreviousAssociatedEdge();
+
+					assert helper.containsKey(ei_m1);
+
+					Vertex v = helper.get(ei_m1);
+					VertexType vt = judgeVertexType(v);
+
+					if (vt == VertexType.MERGE) {
+						// TODO: insert diagonal from ei_m1 to vi
+					}
+
+					t.remove(ei_m1);
+				}
+				break;
+				case MERGE: {
+					Edge ei_m1 = vi.getPreviousAssociatedEdge();
+
+					assert helper.containsKey(ei_m1);
+
+					Vertex v = helper.get(ei_m1);
+					VertexType vt = judgeVertexType(v);
+
+					if (vt == VertexType.MERGE) {
+						// TODO: insert diagonal from ei_m1 to vi
+					}
+
+					t.remove(ei_m1);
+
+					Edge ej = null;
+					// TODO: search for ej
+
+					v = helper.get(ej);
+					vt = judgeVertexType(v);
+
+					if (vt == VertexType.MERGE) {
+						// TODO: insert diagonal from vi to v
+					}
+
+					helper.put(ej, vi);
+				}
+				break;
+				case SPLIT: {
+					Edge ej = null;
+					// TODO: search for ej
+
+					Vertex dest = helper.get(ej);
+					// TODO: insert diagonal from vi to dest
+
+					helper.put(ej, vi);
+
+					Edge ei = vi.getAssociatedEdge();
+
+					t.insert(ei);
+					helper.put(ei, vi);
+				}
+				break;
+			}
+		}
+
+		return result;
+	}
+
+	private Map<Edge, Vertex> helper;
+
+	private static VertexType judgeVertexType(Vertex vi) {
+		ArrayList<Edge> edges = vi.getInEdges();
+
+		assert edges.size() == 2;
+
+		// Note: Here it is assumed that ref edges are stored in CCW order
+		Edge e1 = edges.get(0);
+		Edge e2 = edges.get(1);
+
+		Vertex v1 = e1.getTheOtherVertexOf(vi);
+		Vertex v2 = e2.getTheOtherVertexOf(vi);
+
+		boolean allAbove = v1.getY() > vi.getY() && v2.getY() > vi.getY();
+		boolean allBelow = v1.getY() < vi.getY() && v2.getY() < vi.getY();
+
+		if (!allAbove && !allBelow) {
+			return VertexType.REGULAR;
+		}
+
+		int x1 = v1.getX() - vi.getX();
+		int y1 = v1.getY() - vi.getY();
+		int x2 = v2.getX() - vi.getX();
+		int y2 = v2.getY() - vi.getY();
+
+		double a1 = Math.atan2(y1, x1);
+		double a2 = Math.atan2(y2, x2);
+
+		assert a1 != a2;
+
+		if (allAbove) {
+			if (a2 - a1 > 0) {
+				return VertexType.MERGE;
+			} else if (a2 - a1 < 0) {
+				return VertexType.END;
+			}
+		} else if (allBelow) {
+			if (a2 - a1 > 0) {
+				return VertexType.SPLIT;
+			} else if (a2 - a1 < 0) {
+				return VertexType.START;
+			}
+		}
+
+		throw new RuntimeException("Oops unexpected");
+	}
+
+	private enum VertexType {
+		REGULAR, START, END, MERGE, SPLIT
+	}
+
+	private static int vertexComparator(final Vertex v1, final Vertex v2) {
+		int result = v1.getY() - v2.getY();
+
+		if (result != 0) {
+			return result;
+		} else {
+			return v1.getX() - v2.getX();
+		}
 	}
 
 	/*
@@ -136,15 +350,15 @@ public class GeometricAlgorithms {
 	public ArrayList<Polygon> computeVisibilityPolygon(Vertex v, Polygon p) {
 		//Array of triangles comprising the visibility polygon
 		ArrayList<Polygon> visibilityPolygon = new ArrayList<Polygon>();
-		
+
 		ArrayList<Vertex> visibleVertices = visibleVertices(v, p);
-		
+
 		visibilityPolygon.add(p);
 		//Gotta construct the triangles somehow...
-		for(Vertex w : visibleVertices) {
-			
+		for (Vertex w : visibleVertices) {
+
 		}
-		
+
 		return visibilityPolygon;
 	}
 
@@ -156,44 +370,44 @@ public class GeometricAlgorithms {
 	 */
 	private ArrayList<Vertex> visibleVertices(Vertex v, Polygon p) {
 		ArrayList<Vertex> obstacleVertices = p.getVerticesAndHoles();
-		
-		obstacleVertices.sort((v1, v2) -> compareAngleAndProximity(v, v1,v2));
-		
-		AVLTree<Edge> tree = new AVLTree<Edge>();		
-		
-		Edge sweepLine = new Edge(v, new Vertex((int)(Math.ceil(p.getMaxDistance())), v.getY()));
-		
+
+		obstacleVertices.sort((v1, v2) -> compareAngleAndProximity(v, v1, v2));
+
+		AVLTree<Edge> tree = new AVLTree<Edge>();
+
+		Edge sweepLine = new Edge(v, new Vertex((int) (Math.ceil(p.getMaxDistance())), v.getY()));
+
 		ArrayList<Edge> intersectedEdges = new ArrayList<Edge>();
-		for(Edge obstacleEdge : p.getEdges()){
-			if(edgesIntersect(sweepLine, obstacleEdge)){
+		for (Edge obstacleEdge : p.getEdges()) {
+			if (edgesIntersect(sweepLine, obstacleEdge)) {
 				intersectedEdges.add(obstacleEdge);
 			}
 		}
 		intersectedEdges.sort((e1, e2) -> compareIntersectionDistance(v, sweepLine, e1, e2));
-		for(Edge edge : intersectedEdges){
+		for (Edge edge : intersectedEdges) {
 			tree.insert(edge);
 		}
-		
+
 		ArrayList<Vertex> visibleVertices = new ArrayList<Vertex>();
-		
-		for(int i = 0; i < obstacleVertices.size(); ++i){
+
+		for (int i = 0; i < obstacleVertices.size(); ++i) {
 			Vertex vi = obstacleVertices.get(i);
-			if(isVisible(obstacleVertices, i)){
-				visibleVertices.add(vi);				
+			if (isVisible(obstacleVertices, i)) {
+				visibleVertices.add(vi);
 				ArrayList<Edge> incidentEdges = vi.getInEdges();
-				for(Edge e : incidentEdges){
+				for (Edge e : incidentEdges) {
 					//Get the other vertex (not "vi") of the incident edge
-					Vertex otherVertex = e.getFirstVertex().equals(vi)? e.getSecondVertex() : e.getFirstVertex();
+					Vertex otherVertex = e.getFirstVertex().equals(vi) ? e.getSecondVertex() : e.getFirstVertex();
 					//If the orientation if clockwise w.r.t. the sweepline, add the edge to the tree.
-					if(orientation(v, vi, otherVertex) == 1){
-						tree.insert(e);	
+					if (orientation(v, vi, otherVertex) == 1) {
+						tree.insert(e);
 					}
 					//If the orientation if counter-clockwise w.r.t. the sweepline, remove the edge to the tree.
-					if(orientation(v, vi, otherVertex) == 2){
-						tree.remove(e);	
+					if (orientation(v, vi, otherVertex) == 2) {
+						tree.remove(e);
 					}
 				}
-			}			
+			}
 		}
 		return visibleVertices;
 	}
@@ -201,8 +415,8 @@ public class GeometricAlgorithms {
 	/*
 	 * Implementation of "Visible(W)" subroutine. From the book
 	 * "Computational Geometry: Algorithms and Applications - Third Edition" by
-	 * M. Berg , page 329. 
-	 * Input: Point W. 
+	 * M. Berg , page 329.
+	 * Input: Point W.
 	 * Output: The set of visible vertices from P.
 	 */
 	private boolean isVisible(ArrayList<Vertex> w, int i) {
@@ -216,39 +430,40 @@ public class GeometricAlgorithms {
 		*/
 		return true;
 	}
-	
-	private int compareAngleAndProximity(Vertex reference, Vertex v1, Vertex v2){
+
+	private int compareAngleAndProximity(Vertex reference, Vertex v1, Vertex v2) {
 		int result = Float.compare(v1.computeClockwiseAngle(reference), v2.computeClockwiseAngle(reference));
-		if(result == 0){
-			Double d1 = Math.sqrt(Math.pow(v1.getY() - reference.getY(), 2)  + Math.pow((v1.getX() - reference.getX()), 2));
-			Double d2 = Math.sqrt(Math.pow(v2.getY() - reference.getY(), 2)  + Math.pow((v2.getX() - reference.getX()), 2));
+		if (result == 0) {
+			Double d1 = Math.sqrt(Math.pow(v1.getY() - reference.getY(), 2) + Math.pow((v1.getX() - reference.getX()), 2));
+			Double d2 = Math.sqrt(Math.pow(v2.getY() - reference.getY(), 2) + Math.pow((v2.getX() - reference.getX()), 2));
 			return Double.compare(d1, d2);
 		}
 		return result;
 	}
-	
-	private int compareIntersectionDistance(Vertex v, Edge e, Edge e1, Edge e2){
+
+	private int compareIntersectionDistance(Vertex v, Edge e, Edge e1, Edge e2) {
 		return Double.compare(getIntersectionDistance(v, e, e1), getIntersectionDistance(v, e, e2));
 	}
-	private double getIntersectionDistance(Vertex v, Edge e1, Edge e2){
+
+	private double getIntersectionDistance(Vertex v, Edge e1, Edge e2) {
 		int x1, x2, x3, x4, y1, y2, y3, y4;
-		
-		x1 = e1.getFirstVertex().getX(); 
+
+		x1 = e1.getFirstVertex().getX();
 		y1 = e1.getFirstVertex().getY();
-		x2 = e1.getSecondVertex().getX(); 
+		x2 = e1.getSecondVertex().getX();
 		y2 = e1.getSecondVertex().getY();
-		x3 = e2.getFirstVertex().getX(); 
+		x3 = e2.getFirstVertex().getX();
 		y3 = e2.getFirstVertex().getY();
-		x4 = e2.getSecondVertex().getX(); 
-		y4 = e2.getSecondVertex().getY(); 
-				
-		int x = ((x1*y2 - y1*x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
-		int y = ((x1*y2 - y1*x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
-		
-		return Math.sqrt(Math.pow(y - v.getY(), 2)  + Math.pow((x - v.getX()), 2));
+		x4 = e2.getSecondVertex().getX();
+		y4 = e2.getSecondVertex().getY();
+
+		int x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+		int y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+
+		return Math.sqrt(Math.pow(y - v.getY(), 2) + Math.pow((x - v.getX()), 2));
 	}
-	
-	private boolean isVisible(Vertex viewer, ArrayList<Vertex> vertices){
+
+	private boolean isVisible(Vertex viewer, ArrayList<Vertex> vertices) {
 		return false;
 	}
 
@@ -256,12 +471,12 @@ public class GeometricAlgorithms {
 		int minX, minY, maxX, maxY;
 		minX = minY = Integer.MAX_VALUE;
 		maxX = maxY = Integer.MIN_VALUE;
-		
-		for(Vertex v : p.getVertices()){
-			if(v.getX() > maxX) maxX = v.getX();
-			if(v.getX() < minX) minX = v.getX();
-			if(v.getY() > maxY) maxY = v.getY();
-			if(v.getY() < minY) minY = v.getY();
+
+		for (Vertex v : p.getVertices()) {
+			if (v.getX() > maxX) maxX = v.getX();
+			if (v.getX() < minX) minX = v.getX();
+			if (v.getY() > maxY) maxY = v.getY();
+			if (v.getY() < minY) minY = v.getY();
 		}
 		ArrayList<Vertex> vertices = new ArrayList<Vertex>();
 		vertices.add(new Vertex(maxX, maxY));
@@ -269,14 +484,14 @@ public class GeometricAlgorithms {
 		vertices.add(new Vertex(minX, minY));
 		vertices.add(new Vertex(minX, maxY));
 		Polygon boundingBox = new Polygon(vertices);
-		return boundingBox;		
+		return boundingBox;
 	}
 
 	private boolean insidePolygon(Vertex v, Polygon p) {
 		return false;
 	}
-	
-	private boolean edgesIntersect(Edge e1, Edge e2){
+
+	private boolean edgesIntersect(Edge e1, Edge e2) {
 		return intersect(e1.getFirstVertex(), e1.getSecondVertex(), e2.getFirstVertex(), e2.getSecondVertex());
 	}
 
