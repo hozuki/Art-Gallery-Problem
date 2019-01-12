@@ -358,11 +358,13 @@ public class ApplicationGUI implements Runnable {
 		if (true) {
 			//String fileName = fileChooser.getSelectedFile().getName();
 			//fileNumber = fileName.charAt(fileName.length() - 1);
-			String fileName = "AGS6";
-			char fileNumber = '6';
+			Polygon galleryPolygon = new Polygon();
+
+			char fileNumber = '3';
+			String fileName = "AGS";
 			try {
-				txtAreaStatus.append("Attempting to load gallery file [" + directory + fileName + "]\n");
-				br = new BufferedReader(new FileReader(paths(directory, fileName)));
+				txtAreaStatus.append("Attempting to load gallery file [" + paths(directory, fileName + fileNumber) + "]\n");
+				br = new BufferedReader(new FileReader(paths(directory, fileName + fileNumber)));
 				int count = 1;
 				int n, h, e, a;
 				int g, v, t, d;
@@ -384,7 +386,7 @@ public class ApplicationGUI implements Runnable {
 					} else if (count == 2) {
 						if (h > 0) {
 							for (int i = 0; i < values.length; ++i) {
-								Hole tempHole = new Hole();
+								Hole tempHole = new Hole(galleryPolygon);
 								tempHole.setSize(Integer.parseInt(values[i]));
 								holes.add(tempHole);
 							}
@@ -398,7 +400,7 @@ public class ApplicationGUI implements Runnable {
 							throw new IllegalArgumentException();
 						}
 					} else if (count > 3 && count <= 3 + n) {
-						Vertex tempVertex = new Vertex(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
+						Vertex tempVertex = new Vertex(galleryPolygon, Integer.parseInt(values[0]), Integer.parseInt(values[1]),
 								count - 3, Integer.parseInt(values[2]), Integer.parseInt(values[3]));
 						vertices.add(tempVertex);
 					} else {
@@ -408,15 +410,24 @@ public class ApplicationGUI implements Runnable {
 							lastHole++;
 							hole = holes.get(lastHole);
 						}
-						Vertex tempVertex = new Vertex(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
+						Vertex tempVertex = new Vertex(galleryPolygon, Integer.parseInt(values[0]), Integer.parseInt(values[1]),
 								count - 3, Integer.parseInt(values[2]), 0);
 						hole.addVertex(tempVertex);
 
 					}
 					count++;
 				}
+				for (Hole hole : holes) {
+					// CCW to CW
+					hole.reverseVerticesAndEdges();
+				}
+
+				galleryPolygon.setVertices(vertices);
+				galleryPolygon.setHoles(holes);
+				galleryPolygon.generateEdges();
+				galleryPolygon.fixVertexNeighbors();
+
 				txtAreaStatus.append("File succesfully loaded!\n");
-				Polygon galleryPolygon = new Polygon(vertices, holes);
 				this.gallery = new GalleryModel(galleryPolygon, t);
 
 			} catch (FileNotFoundException e) {

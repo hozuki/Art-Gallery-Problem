@@ -1,6 +1,8 @@
 package artgallery.geometricalElements;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class Vertex implements Comparable<Vertex> {
 
@@ -9,13 +11,20 @@ public class Vertex implements Comparable<Vertex> {
 	private double Y;
 	private boolean art;
 	private boolean exit;
+	private Polygon polygon;
 	private ArrayList<Vertex> neighbors = new ArrayList<Vertex>();
 	private ArrayList<Polygon> visibilityPolygon = new ArrayList<Polygon>();
+	private boolean onBoundary;
 
-	public Vertex() {
+	private Edge inEdge;
+	private Edge outEdge;
+
+	public Vertex(Polygon polygon) {
+		this.polygon = polygon;
 	}
 
-	public Vertex(double x, double y) {
+	public Vertex(Polygon polygon, double x, double y) {
+		this(polygon);
 		this.setId(-1);
 		this.X = x;
 		this.Y = y;
@@ -23,12 +32,11 @@ public class Vertex implements Comparable<Vertex> {
 		this.setExit(false);
 	}
 
-	public Vertex(double x, double y, int id, int artFlag, int exitFlag) {
-		this.X = x;
-		this.Y = y;
+	public Vertex(Polygon polygon, double x, double y, int id, int artFlag, int exitFlag) {
+		this(polygon, x, y);
 		this.setId(id);
-		this.setArt(artFlag == 1 ? true : false);
-		this.setExit(exitFlag == 1 ? true : false);
+		this.setArt(artFlag == 1);
+		this.setExit(exitFlag == 1);
 	}
 
 	public int getId() {
@@ -37,6 +45,10 @@ public class Vertex implements Comparable<Vertex> {
 
 	public void setId(int id) {
 		this.id = id;
+	}
+
+	public Polygon getPolygon() {
+		return polygon;
 	}
 
 	public double getX() {
@@ -84,6 +96,13 @@ public class Vertex implements Comparable<Vertex> {
 		}
 	}
 
+	public void swapNeighbors() {
+		assert neighbors.size() == 2;
+		Vertex n = neighbors.get(0);
+		neighbors.set(0, neighbors.get(1));
+		neighbors.set(1, n);
+	}
+
 	public ArrayList<Vertex> getNeighbors() {
 		return neighbors;
 	}
@@ -93,6 +112,14 @@ public class Vertex implements Comparable<Vertex> {
 			return true;
 		}
 		return false;
+	}
+
+	public boolean isOnBoundary() {
+		return onBoundary;
+	}
+
+	public void setOnBoundary(boolean onBoundary) {
+		this.onBoundary = onBoundary;
 	}
 
 	public ArrayList<Polygon> getVisibilityPolygon() {
@@ -105,12 +132,22 @@ public class Vertex implements Comparable<Vertex> {
 
 	@Override
 	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+
 		if (o instanceof Vertex) {
+
 			if (Math.abs(this.X - ((Vertex) o).getX()) < 0.01 && Math.abs(this.Y - ((Vertex) o).getY()) < 0.01) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(X, Y);
 	}
 
 	@Override
@@ -124,8 +161,7 @@ public class Vertex implements Comparable<Vertex> {
 
 	@Override
 	public Vertex clone() {
-		Vertex clone = new Vertex(this.X, this.Y, this.id, this.art == true ? 1 : 0, this.exit == true ? 1 : 0);
-		return clone;
+		return new Vertex(polygon, this.X, this.Y, this.id, this.art ? 1 : 0, this.exit ? 1 : 0);
 	}
 
 	@Override
@@ -133,23 +169,20 @@ public class Vertex implements Comparable<Vertex> {
 		return "(" + this.getX() + ":" + this.getY() + ")";
 	}
 
-	/**
-	 * Get edge e_i from vertex v_i
-	 *
-	 * @return
-	 */
-	public Edge getAssociatedEdge() {
-		// TODO
-		throw new UnsupportedOperationException("Not implemented");
+	public Edge getOutEdge() {
+		return outEdge;
 	}
 
-	/**
-	 * Get e_{i-1} from vertex v_i
-	 *
-	 * @return
-	 */
-	public Edge getPreviousAssociatedEdge() {
-		throw new UnsupportedOperationException("Not implemented");
+	public Edge getInEdge() {
+		return inEdge;
+	}
+
+	void setInEdge(Edge e) {
+		inEdge = e;
+	}
+
+	void setOutEdge(Edge e) {
+		outEdge = e;
 	}
 
 }

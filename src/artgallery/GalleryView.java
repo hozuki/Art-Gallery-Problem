@@ -93,7 +93,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 			// triangulation.
 			if (gallery.showTriangulation()) {
 				gallery.getGallery().computeTriangulation();
-				drawTriangulation(g2d, gallery.getGallery().getTriangulation());				
+				drawTriangulation(g2d, gallery.getGallery().getTriangulation());
 			}
 
 			// If selected, display the visibility polygon of the guards.
@@ -101,7 +101,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 			// vertex 1.
 			// Perhaps tweak in the future to work on a "clicked guard" to make
 			// interactive & avoid overlapping.
-			
+
 
 			// Draw the gallery bounding edges.
 			for (Edge edge : gallery.getGallery().getEdges()) {
@@ -122,11 +122,11 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 				for (Guard guard : gallery.getGuards()) {
 					if (gallery.showGuardsPaths()) {
 						Color copBlue = new Color(100, 200, 250);
-						for (Edge edge : guard.getRouteEdges()) {
+						for (Edge edge : guard.getRouteEdges(gallery.getGallery())) {
 							drawEdge(g2d, edge, 2, copBlue);
 						}
 						for (RoutePoint point : guard.getRoutePoints()) {
-							drawVertex(g2d, point.toVertex(), 6, copBlue);
+							drawVertex(g2d, point.toVertex(gallery.getGallery()), 6, copBlue);
 						}
 					}
 					drawGuard(g2d, guard);
@@ -135,11 +135,11 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 				for (Thief thief : gallery.getThieves()) {
 					if (gallery.showThievesPaths()) {
 						Color thiefOrange = new Color(250, 150, 0);
-						for (Edge edge : thief.getRouteEdges()) {
+						for (Edge edge : thief.getRouteEdges(gallery.getGallery())) {
 							drawEdge(g2d, edge, 2, thiefOrange);
 						}
 						for (RoutePoint point : thief.getRoutePoints()) {
-							drawVertex(g2d, point.toVertex(), 6, thiefOrange);
+							drawVertex(g2d, point.toVertex(gallery.getGallery()), 6, thiefOrange);
 						}
 					}
 					drawThief(g2d, thief);
@@ -149,15 +149,15 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 				//Vertex viewer = gallery.getGallery().getVertices().get(5);
 				ArrayList<artgallery.geometricalElements.Polygon> guardView = gallery.computeGuardVisibility(0);
 				Color copBlue = new Color(255, 200, 10, 120);
-				
+
 				for (artgallery.geometricalElements.Polygon visibleTriangle : guardView) {
 					drawArea(g2d, visibleTriangle, copBlue);
 					visibleTriangle.getVertices().forEach(v -> drawVertex(g2d, v, 8, Color.ORANGE));
 				}
-				
+
 			}
-			
-			for(Edge e : this.gallery.getTrapezoidalEdges()) {
+
+			for (Edge e : this.gallery.getTrapezoidalEdges()) {
 				drawVertex(g2d, e.getFirstVertex(), 4, Color.MAGENTA);
 				drawVertex(g2d, e.getSecondVertex(), 4, Color.MAGENTA);
 				drawEdge(g2d, e, 1, Color.MAGENTA);
@@ -171,7 +171,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 	}
 
 	private void drawVertex(Graphics2D g2d, Vertex v, int size, Color c) {
-		size = (int)(Math.round(size / scale));
+		size = (int) (Math.round(size / scale));
 		Ellipse2D e = new Ellipse2D.Double(v.getX() - size / 2, v.getY() - size / 2, size, size);
 		if (c == null) {
 			if (v.isArt()) {
@@ -204,13 +204,15 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 		g2d.setStroke(new BasicStroke(t));
 		g2d.draw(new Line2D.Double(v1.getX(), v1.getY(), v2.getX(), v2.getY()));
 	}
+
 	private void drawEdgeLabel(Graphics2D g2d, Vertex v, Color c) {
 		c = c != null ? c : new Color(220, 220, 220, 127);
 		g2d.setColor(c);
 		g2d.scale(1, -1);
-		g2d.drawString(v.getId()+"", (float) (v.getX()-8), (float) (-v.getY()-6));
+		g2d.drawString(v.getId() + "", (float) (v.getX() - 8), (float) (-v.getY() - 6));
 		g2d.scale(1, -1);
 	}
+
 	private void drawHole(Graphics2D g2d, Hole hole) {
 		for (Edge e : hole.getEdges()) {
 			drawEdge(g2d, e, 2, null);
@@ -225,7 +227,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 		// (non-Java) Polygon.
 		Polygon p = new Polygon();
 		for (Vertex v : galleryPolygon.getVertices()) {
-			p.addPoint((int)(v.getX()), (int)(v.getY()));
+			p.addPoint((int) (v.getX()), (int) (v.getY()));
 		}
 		Area surface = new Area(p);
 
@@ -233,7 +235,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 		for (Hole hole : galleryPolygon.getHoles()) {
 			Polygon h = new Polygon();
 			for (Vertex v : hole.getVertices()) {
-				h.addPoint((int)(v.getX()), (int)(v.getY()));
+				h.addPoint((int) (v.getX()), (int) (v.getY()));
 			}
 			Area currentHole = new Area(h);
 			surface.subtract(currentHole);
@@ -250,7 +252,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 	private void drawTriangulation(Graphics2D g2d, ArrayList<artgallery.geometricalElements.Polygon> triangulation) {
 		for (artgallery.geometricalElements.Polygon p : triangulation) {
 			int vertexSize = 4;
-			Vertex v = new Vertex(p.getCentroid()[0], p.getCentroid()[1]);
+			Vertex v = new Vertex(gallery.getGallery(), p.getCentroid()[0], p.getCentroid()[1]);
 			drawVertex(g2d, v, vertexSize, Color.GREEN);
 			for (Edge e : p.getEdges()) {
 				drawEdge(g2d, e, 2, new Color(0, 255, 0));
@@ -284,24 +286,24 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 		// Draw background rectangle
 		Rectangle2D r = new Rectangle2D.Double(w / 2 - 185, h / 2 - 55, 180, 50);
 		Color translucidGray = new Color(150, 150, 150, 120);
-		g2d.translate((-offsetX)/scale, offsetY/scale);
+		g2d.translate((-offsetX) / scale, offsetY / scale);
 		g2d.scale(1 / scale, -1 / scale);
-		
+
 		g2d.setColor(translucidGray);
 		g2d.fill(r);
 		g2d.draw(r);
 
 		// Draw legend symbols
-		int vertexSize = (int)(Math.round(10 * scale));
+		int vertexSize = (int) (Math.round(10 * scale));
 		Vertex symbol;
-		symbol = new Vertex((int) (w / 2 - 100), (int) ((h / 2 - 44)));
+		symbol = new Vertex(gallery.getGallery(), (int) (w / 2 - 100), (int) ((h / 2 - 44)));
 		drawVertex(g2d, symbol, vertexSize, null);
 
-		symbol = new Vertex((int) (w / 2 - 100), (int) ((h / 2 - 29)));
+		symbol = new Vertex(gallery.getGallery(), (int) (w / 2 - 100), (int) ((h / 2 - 29)));
 		symbol.setExit(true);
 		drawVertex(g2d, symbol, vertexSize, null);
 
-		symbol = new Vertex((int) (w / 2 - 100), (int) ((h / 2 - 14)));
+		symbol = new Vertex(gallery.getGallery(), (int) (w / 2 - 100), (int) ((h / 2 - 14)));
 		symbol.setArt(true);
 		drawVertex(g2d, symbol, vertexSize, null);
 
@@ -349,7 +351,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 		offsetX = 0;
 		offsetY = 0;
 	}
-	
+
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
 		scale -= (double) (e.getWheelRotation()) / 10;
@@ -361,7 +363,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 	@Override
 	public void mouseClicked(MouseEvent e) {
 		Point p = e.getPoint();
-		System.out.println((int)(p.getX() - this.getWidth()/2) + ", "  + (int)(-p.getY() + this.getHeight()/2) +", 0, 0");
+		System.out.println((int) (p.getX() - this.getWidth() / 2) + ", " + (int) (-p.getY() + this.getHeight() / 2) + ", 0, 0");
 	}
 
 	@Override

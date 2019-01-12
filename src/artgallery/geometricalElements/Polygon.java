@@ -1,18 +1,18 @@
 package artgallery.geometricalElements;
 
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import artgallery.GeometricAlgorithms;
-import artgallery.Actors.Guard;
 
 public class Polygon {
 
 	private ArrayList<Vertex> vertices = new ArrayList<Vertex>();
 	private ArrayList<Edge> edges = new ArrayList<Edge>();
 	private ArrayList<Hole> holes = new ArrayList<Hole>();
-	private ArrayList<Polygon> triangulation = null;
+	private ArrayList<Polygon> triangulation = new ArrayList<>();
 	private Map<Vertex, Integer> chainMap = new HashMap<Vertex, Integer>();
 
 	public Polygon() {
@@ -22,6 +22,9 @@ public class Polygon {
 	public Polygon(ArrayList<?> elements) {
 		if (elements.get(0) instanceof Vertex) {
 			this.vertices = (ArrayList<Vertex>) elements;
+			for (Vertex v : (ArrayList<Vertex>) elements) {
+				v.setOnBoundary(true);
+			}
 			generateEdges();
 		} else if (elements.get(0) instanceof Edge) {
 			this.edges = (ArrayList<Edge>) elements;
@@ -38,12 +41,18 @@ public class Polygon {
 
 	public Polygon(ArrayList<Vertex> vertices, ArrayList<Hole> holes) {
 		this.vertices = vertices;
+		for (Vertex v : vertices) {
+			v.setOnBoundary(true);
+		}
 		this.holes = holes;
 		generateEdges();
 	}
 
 	public Polygon(ArrayList<Vertex> vertices, ArrayList<Edge> edges, ArrayList<Hole> holes) {
 		this.vertices = vertices;
+		for (Vertex v : vertices) {
+			v.setOnBoundary(true);
+		}
 		this.edges = edges;
 		this.holes = holes;
 	}
@@ -54,14 +63,20 @@ public class Polygon {
 
 	public ArrayList<Vertex> getVerticesAndHoles() {
 		ArrayList<Vertex> allVertices = new ArrayList<Vertex>(vertices);
+
 		for (Hole h : holes) {
-			allVertices.addAll(new ArrayList<Vertex>(h.getVertices()));
+			allVertices.addAll(h.getVertices());
 		}
+
 		return allVertices;
 	}
 
 	public void setVertices(ArrayList<Vertex> vertices) {
 		this.vertices = vertices;
+
+		for (Vertex v : vertices) {
+			v.setOnBoundary(true);
+		}
 	}
 
 	public ArrayList<Edge> getEdges() {
@@ -87,11 +102,11 @@ public class Polygon {
 	}
 
 	public void generateEdges() {
-		//Construct the edges for the gallery bounds by connecting points clockwise.
+		//Construct the edges for the gallery bounds by connecting points counter-clockwise.
 		for (int i = 0; i < vertices.size(); ++i) {
 			Vertex v1 = vertices.get(i);
 			Vertex v2 = vertices.get((i + 1) % vertices.size());
-			this.edges.add(new Edge(v1, v2));
+			this.edges.add(new Edge(this, v1, v2));
 			v1.addNeighbor(v2);
 			v2.addNeighbor(v1);
 		}
@@ -103,12 +118,33 @@ public class Polygon {
 			e1.addNeighbor(e2);
 			e2.addNeighbor(e1);
 		}
+
+		for (int i = 0; i < edges.size(); ++i) {
+			vertices.get(i).setOutEdge(edges.get(i));
+			vertices.get(i).setInEdge(edges.get((i - 1 + edges.size()) % edges.size()));
+		}
+
+		for (Hole h : holes) {
+			h.generateEdges();
+		}
+	}
+
+	public void fixVertexNeighbors() {
+		vertices.get(0).swapNeighbors();
+
+		for (Hole h : holes) {
+			ArrayList<Vertex> vs = h.getVertices();
+
+			for (int i = 0; i < vs.size() - 1; i++) {
+				vs.get(i).swapNeighbors();
+			}
+		}
 	}
 
 	public void computeTriangulation() {
 		if (this.triangulation.isEmpty()) {
 			GeometricAlgorithms GA = new GeometricAlgorithms();
-			triangulation = GA.computeTriangulation(this);
+			triangulation = GA.triangulateSimplePolygon(this);
 		}
 	}
 
@@ -195,8 +231,33 @@ public class Polygon {
 		}
 	}
 
+	public Rectangle2D getBoundingBox() {
+		double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE;
+		double maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
+
+		for (Vertex v : getVertices()) {
+			if (v.getX() < minX) {
+				minX = v.getX();
+			}
+			if (v.getY() < minY) {
+				minY = v.getY();
+			}
+			if (v.getX() > maxX) {
+				maxX = v.getX();
+			}
+			if (v.getY() > maxY) {
+				maxY = v.getY();
+			}
+		}
+
+		return new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
+	}
+
 	@Override
 	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
 		if (!(o instanceof Polygon)) {
 			return false;
 		}

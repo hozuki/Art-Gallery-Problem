@@ -1,21 +1,24 @@
 package artgallery.geometricalElements;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class Edge implements Comparable<Edge> {
 
 	private String id;
-	private int length;
 	private Vertex firstVertex;
 	private Vertex secondVertex;
 	private ArrayList<Edge> neighbors = new ArrayList<Edge>();
+	private Polygon polygon;
 
-	public Edge() {
-		setFirstVertex(new Vertex());
-		setSecondVertex(new Vertex());
+	public Edge(Polygon polygon) {
+		this.polygon = polygon;
+		setFirstVertex(new Vertex(polygon));
+		setSecondVertex(new Vertex(polygon));
 	}
 
-	public Edge(Vertex v1, Vertex v2) {
+	public Edge(Polygon polygon, Vertex v1, Vertex v2) {
+		this.polygon = polygon;
 		setFirstVertex(v1);
 		setSecondVertex(v2);
 		setId(v1.getId() + "-" + v2.getId());
@@ -32,9 +35,8 @@ public class Edge implements Comparable<Edge> {
 	}
 
 	public double length() {
-		double length = Math.pow(firstVertex.getY() - secondVertex.getY(), 2)
-				+ Math.pow((firstVertex.getX() - secondVertex.getX()), 2);
-		return length;
+		return Math.sqrt(Math.pow(firstVertex.getY() - secondVertex.getY(), 2)
+				+ Math.pow((firstVertex.getX() - secondVertex.getX()), 2));
 	}
 
 	public Vertex getFirstVertex() {
@@ -42,6 +44,7 @@ public class Edge implements Comparable<Edge> {
 	}
 
 	public void setFirstVertex(Vertex firstVertex) {
+		assert firstVertex.getPolygon() == getPolygon();
 		this.firstVertex = firstVertex;
 	}
 
@@ -50,6 +53,7 @@ public class Edge implements Comparable<Edge> {
 	}
 
 	public void setSecondVertex(Vertex secondVertex) {
+		assert secondVertex.getPolygon() == getPolygon();
 		this.secondVertex = secondVertex;
 	}
 
@@ -65,6 +69,14 @@ public class Edge implements Comparable<Edge> {
 			return true;
 		}
 		return false;
+	}
+
+	public Polygon getPolygon() {
+		return polygon;
+	}
+
+	public boolean isHorizontal() {
+		return firstVertex.getY() == secondVertex.getY();
 	}
 
 	public void addNeighbor(Edge e) {
@@ -94,7 +106,7 @@ public class Edge implements Comparable<Edge> {
 	public Vertex getMidpoint() {
 		double midX = firstVertex.getX() + (secondVertex.getX() - firstVertex.getX()) / 2;
 		double midY = firstVertex.getY() + (secondVertex.getY() - firstVertex.getY()) / 2;
-		return new Vertex(midX, midY);
+		return new Vertex(polygon, midX, midY);
 	}
 
 	@Override
@@ -108,6 +120,11 @@ public class Edge implements Comparable<Edge> {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(firstVertex, secondVertex);
 	}
 
 	public Edge getPreviousEdgeLinkedBy(Vertex v) {
@@ -146,6 +163,11 @@ public class Edge implements Comparable<Edge> {
 				return Integer.compare(secondVertex.getId(), edge.secondVertex.getId());
 			}
 		}
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s-%s", firstVertex.toString(), secondVertex.toString());
 	}
 
 }

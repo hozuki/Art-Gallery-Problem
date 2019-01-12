@@ -1,4 +1,5 @@
 package artgallery;
+
 import java.util.ArrayList;
 
 import artgallery.Actors.Guard;
@@ -35,6 +36,7 @@ public class GalleryModel {
 	public void setGallery(Polygon galleryPolygon) {
 		this.galleryPolygon = galleryPolygon;
 	}
+
 	public int getGlobalTime() {
 		return globalTime;
 	}
@@ -42,55 +44,65 @@ public class GalleryModel {
 	public void setGlobalTime(int globalTime) {
 		this.globalTime = globalTime;
 	}
-	
-	public ArrayList<Edge> getTrapezoidalEdges(){
+
+	public ArrayList<Edge> getTrapezoidalEdges() {
 		GeometricAlgorithms GA = new GeometricAlgorithms();
 		GA.trapezoidalDecomposition(galleryPolygon);
 		return GA.trapezoidalEdges;
 	}
-	
+
 	public ArrayList<Polygon> computeGuardVisibility(int i) {
 		GeometricAlgorithms GA = new GeometricAlgorithms();
 		Guard guard = this.guards.get(i);
-		Vertex guardPosition = new Vertex(guard.getX(), guard.getY());
+		Vertex guardPosition = new Vertex(galleryPolygon, guard.getX(), guard.getY());
 		guard.setVisibilityPolygon(GA.computeVisibilityPolygon(guardPosition, galleryPolygon));
 		return guard.getVisibilityPolygon();
 	}
-	
+
 	public void toggleActors() {
-		this.actors = this.actors == true ? false : true;
+		this.actors = !this.actors;
 	}
+
 	public void toggleLegend() {
-		this.legend = this.legend == true ? false : true;
+		this.legend = !this.legend;
 	}
+
 	public void toggleGuardsPaths() {
-		this.guardsPaths = this.guardsPaths == true ? false : true;
+		this.guardsPaths = !this.guardsPaths;
 	}
+
 	public void toggleThievesPaths() {
-		this.thievesPaths = this.thievesPaths == true ? false : true;
+		this.thievesPaths = !this.thievesPaths;
 	}
+
 	public void toggleTriangulation() {
-		this.triangulation = this.triangulation == true ? false : true;
+		this.triangulation = !this.triangulation;
 	}
+
 	public void toggleVisibility() {
-		this.visibility = this.visibility == true ? false : true;
+		this.visibility = !this.visibility;
 	}
 
 	public boolean showActors() {
 		return actors;
 	}
+
 	public boolean showLegend() {
 		return legend;
 	}
+
 	public boolean showGuardsPaths() {
 		return guardsPaths;
 	}
+
 	public boolean showThievesPaths() {
 		return thievesPaths;
 	}
+
 	public boolean showTriangulation() {
 		return triangulation;
 	}
+
 	public boolean showVisibility() {
 		return visibility;
 	}
