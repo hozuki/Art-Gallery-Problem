@@ -102,6 +102,8 @@ public class Polygon {
 	}
 
 	public void generateEdges() {
+		edges = new ArrayList<>();
+
 		//Construct the edges for the gallery bounds by connecting points counter-clockwise.
 		for (int i = 0; i < vertices.size(); ++i) {
 			Vertex v1 = vertices.get(i);
@@ -189,14 +191,33 @@ public class Polygon {
 
 	// Modified the vertices positions to avoid horizontal lines in the polygon.
 	public void tiltHorizontals() {
-		double lastY = Integer.MAX_VALUE;
-		for (Vertex v : vertices) {
-			if (lastY == Integer.MAX_VALUE) {
-				lastY = v.getY();
-			} else if (lastY == v.getY()) {
-				v.setY(v.getY() + 1);
-				lastY = v.getY();
+		tiltSubset(vertices);
+
+		for (Hole h : holes) {
+			tiltSubset(h.getVertices());
+		}
+	}
+
+	private void tiltSubset(ArrayList<Vertex> vertices) {
+		if (vertices.size() < 2) {
+			throw new IllegalArgumentException("Invalid polygon");
+		}
+
+		final double tiltY = 0.1;
+
+		for (int i = 0; i < vertices.size(); ++i) {
+			Vertex vi = vertices.get(i);
+			Vertex vx = vertices.get((i + 1) % vertices.size());
+
+			if (vi.getY() == vx.getY()) {
+				vx.setY(vx.getY() + tiltY);
 			}
+		}
+	}
+
+	public void untiltHorizontals() {
+		for (Vertex v : getVerticesAndHoles()) {
+			v.setY(Math.round(v.getY()));
 		}
 	}
 

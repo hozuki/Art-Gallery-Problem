@@ -161,7 +161,11 @@ public class Vertex implements Comparable<Vertex> {
 
 	@Override
 	public Vertex clone() {
-		return new Vertex(polygon, this.X, this.Y, this.id, this.art ? 1 : 0, this.exit ? 1 : 0);
+		return clone(polygon);
+	}
+
+	public Vertex clone(Polygon newPolygon) {
+		return new Vertex(newPolygon, this.X, this.Y, this.id, this.art ? 1 : 0, this.exit ? 1 : 0);
 	}
 
 	@Override

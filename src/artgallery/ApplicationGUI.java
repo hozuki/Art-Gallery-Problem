@@ -360,7 +360,7 @@ public class ApplicationGUI implements Runnable {
 			//fileNumber = fileName.charAt(fileName.length() - 1);
 			Polygon galleryPolygon = new Polygon();
 
-			char fileNumber = '3';
+			char fileNumber = '6';
 			String fileName = "AGS";
 			try {
 				txtAreaStatus.append("Attempting to load gallery file [" + paths(directory, fileName + fileNumber) + "]\n");
@@ -417,14 +417,16 @@ public class ApplicationGUI implements Runnable {
 					}
 					count++;
 				}
+
+				galleryPolygon.setVertices(vertices);
+				galleryPolygon.setHoles(holes);
+				galleryPolygon.generateEdges();
+
 				for (Hole hole : holes) {
 					// CCW to CW
 					hole.reverseVerticesAndEdges();
 				}
 
-				galleryPolygon.setVertices(vertices);
-				galleryPolygon.setHoles(holes);
-				galleryPolygon.generateEdges();
 				galleryPolygon.fixVertexNeighbors();
 
 				txtAreaStatus.append("File succesfully loaded!\n");

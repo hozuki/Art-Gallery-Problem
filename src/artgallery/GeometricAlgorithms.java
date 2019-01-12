@@ -133,6 +133,7 @@ public final class GeometricAlgorithms {
 	 * @return A list of monotone polygons
 	 */
 	public ArrayList<Polygon> makeMonotonePolygons(final Polygon polygon) {
+		polygon.tiltHorizontals();
 
 		ArrayList<Vertex> vertexArray = new ArrayList<>(polygon.getVertices());
 
@@ -171,20 +172,18 @@ public final class GeometricAlgorithms {
 
 						Vertex v = helper.get(ei_m1);
 
-						if (v != null) {
-							VertexType vt = judgeVertexType(v);
+						VertexType vt = judgeVertexType(v);
 
-							if (vt == VertexType.MERGE) {
-								breakPolygon(result, v, vi);
-							}
-
-							t.remove(ei_m1);
-
-							Edge ei = vi.getOutEdge();
-
-							t.insert(ei);
-							helper.put(ei, vi);
+						if (vt == VertexType.MERGE) {
+							breakPolygon(result, v, vi);
 						}
+
+						t.remove(ei_m1);
+
+						Edge ei = vi.getOutEdge();
+
+						t.insert(ei);
+						helper.put(ei, vi);
 					} else {
 						Edge ej = getFirstLeftEdge(polygon, vi);
 
@@ -194,15 +193,13 @@ public final class GeometricAlgorithms {
 
 						Vertex v = helper.get(ej);
 
-						if (v != null) {
-							VertexType vt = judgeVertexType(v);
+						VertexType vt = judgeVertexType(v);
 
-							if (vt == VertexType.MERGE) {
-								breakPolygon(result, v, vi);
-							}
-
-							helper.put(ej, vi);
+						if (vt == VertexType.MERGE) {
+							breakPolygon(result, v, vi);
 						}
+
+						helper.put(ej, vi);
 					}
 				}
 				break;
@@ -219,15 +216,13 @@ public final class GeometricAlgorithms {
 
 					Vertex v = helper.get(ei_m1);
 
-					if (v != null) {
-						VertexType vt = judgeVertexType(v);
+					VertexType vt = judgeVertexType(v);
 
-						if (vt == VertexType.MERGE) {
-							breakPolygon(result, v, vi);
-						}
-
-						t.remove(ei_m1);
+					if (vt == VertexType.MERGE) {
+						breakPolygon(result, v, vi);
 					}
+
+					t.remove(ei_m1);
 				}
 				break;
 				case MERGE: {
@@ -237,30 +232,26 @@ public final class GeometricAlgorithms {
 
 					Vertex v = helper.get(ei_m1);
 
-					if (v != null) {
-						VertexType vt = judgeVertexType(v);
+					VertexType vt = judgeVertexType(v);
+
+					if (vt == VertexType.MERGE) {
+						breakPolygon(result, v, vi);
+					}
+
+					t.remove(ei_m1);
+
+					Edge ej = getFirstLeftEdge(polygon, vi);
+
+					if (ej != null) {
+						v = helper.get(ej);
+
+						vt = judgeVertexType(v);
 
 						if (vt == VertexType.MERGE) {
 							breakPolygon(result, v, vi);
 						}
 
-						t.remove(ei_m1);
-
-						Edge ej = getFirstLeftEdge(polygon, vi);
-
-						if (ej != null) {
-							v = helper.get(ej);
-
-							if (v != null) {
-								vt = judgeVertexType(v);
-
-								if (vt == VertexType.MERGE) {
-									breakPolygon(result, v, vi);
-								}
-
-								helper.put(ej, vi);
-							}
-						}
+						helper.put(ej, vi);
 					}
 				}
 				break;
@@ -361,7 +352,7 @@ public final class GeometricAlgorithms {
 
 			p1 = new Polygon();
 			p1.setVertices(boundaryVertices1);
-			p2 = new Polygon(boundaryVertices2);
+			p2 = new Polygon();
 			p2.setVertices(boundaryVertices2);
 		} else {
 			// Connect the boundary and the hole
@@ -395,6 +386,14 @@ public final class GeometricAlgorithms {
 			p1.setVertices(vertices);
 		}
 
+		// Generate edges for insidePolygon test
+		// Edges will be regenerated after adding holes
+		p1.generateEdges();
+
+		if (p2 != null) {
+			p2.generateEdges();
+		}
+
 		// Handle holes if any; put them inside newly created polygons.
 		if (toBreak.getHoles().size() > 0) {
 			ArrayList<Hole> p1Holes = new ArrayList<>();
@@ -408,9 +407,9 @@ public final class GeometricAlgorithms {
 				Vertex v = hole.getVertices().get(0);
 
 				if (insidePolygon(v, p1)) {
-					p1Holes.add(hole);
+					p1Holes.add(hole.clone(p1));
 				} else {
-					p2Holes.add(hole);
+					p2Holes.add(hole.clone(p2));
 				}
 			}
 
@@ -865,18 +864,29 @@ public final class GeometricAlgorithms {
 
 	private boolean insidePolygon(Vertex v, Polygon p) {
 		ArrayList<Vertex> intersections = new ArrayList<>();
-		Edge line = new Edge(p, v, new Vertex(p, p.getMaxDistance(), v.getY()));
-		for (Edge edge : p.getEdges()) {
+		Rectangle2D boundingBox = p.getBoundingBox();
+//		Vertex v1 = new Vertex(p, boundingBox.getMinX(), v.getY());
+		Vertex v2 = new Vertex(p, boundingBox.getMaxX() + 10, v.getY());
+		Edge line = new Edge(p, v, v2);
+
+//		// HACK: if the vertex to test is on an edge, add it to intersections first.
+//		// HACK: in our case, all vertices "on" edges that we test should be endpoints
+//		//       of edges, so simply test if it has in/out edges
+//		if (v.getInEdge() != null && v.getOutEdge() != null) {
+//			intersections.add(v);
+//		}
+
+		ArrayList<Edge> edges = p.getEdgesAndHoles();
+		for (Edge edge : edges) {
 			Vertex intersectionPoint = getIntersectionPoint(line, edge);
+
 			if (intersectionPoint != null && !intersections.contains(intersectionPoint)) {
 				intersections.add(intersectionPoint);
 			}
 		}
-		System.out.println(intersections.size() + " at " + v.getY());
-		if (intersections.size() % 2 == 1) {
-			return true;
-		}
-		return false;
+
+//		System.out.println(intersections.size() + " at " + v.getY());
+		return intersections.size() % 2 == 1;
 	}
 
 	private boolean areColinear(Vertex v1, Vertex v2, Vertex v3) {

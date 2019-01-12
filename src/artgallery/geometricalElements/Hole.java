@@ -3,7 +3,7 @@ package artgallery.geometricalElements;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class Hole {
+public class Hole implements Cloneable {
 	private ArrayList<Vertex> vertices;
 	private ArrayList<Edge> edges;
 	private int size;
@@ -19,11 +19,6 @@ public class Hole {
 		this.polygon = polygon;
 		this.setVertices(vertices);
 		edges = new ArrayList<Edge>();
-		for (int i = 0; i < vertices.size(); ++i) {
-			Vertex v1 = vertices.get(i);
-			Vertex v2 = vertices.get((i + 1) % vertices.size());
-			edges.add(new Edge(polygon, v1, v2));
-		}
 	}
 
 	public Polygon getPolygon() {
@@ -47,14 +42,25 @@ public class Hole {
 			this.vertices.add(v);
 			v.setOnBoundary(false);
 		}
-		if (this.vertices.size() == this.size) {
-			for (int i = 0; i < vertices.size(); ++i) {
-				Vertex v1 = vertices.get(i);
-				Vertex v2 = vertices.get((i + 1) % vertices.size());
-				Edge edge = new Edge(polygon, v1, v2);
-				edges.add(edge);
-			}
+	}
+
+	@Override
+	public Hole clone() {
+		return clone(polygon);
+	}
+
+	public Hole clone(Polygon newPolygon) {
+		Hole hole = new Hole(newPolygon);
+
+		ArrayList<Vertex> vertices = new ArrayList<>();
+
+		for (Vertex v : getVertices()) {
+			vertices.add(v.clone(newPolygon));
 		}
+
+		hole.setVertices(vertices);
+
+		return hole;
 	}
 
 	public int getSize() {
@@ -79,9 +85,18 @@ public class Hole {
 	}
 
 	public void generateEdges() {
+		edges = new ArrayList<>();
+
+		for (int i = 0; i < vertices.size(); ++i) {
+			Vertex v1 = vertices.get((i + 1) % vertices.size());
+			Vertex v2 = vertices.get(i);
+			Edge edge = new Edge(polygon, v1, v2);
+			edges.add(edge);
+		}
+
 		for (int i = 0; i < edges.size(); ++i) {
-			vertices.get(i).setOutEdge(edges.get(i));
-			vertices.get(i).setInEdge(edges.get((i + 1 + edges.size()) % edges.size()));
+			vertices.get(i).setInEdge(edges.get(i));
+			vertices.get(i).setOutEdge(edges.get((i - 1 + edges.size()) % edges.size()));
 		}
 	}
 
