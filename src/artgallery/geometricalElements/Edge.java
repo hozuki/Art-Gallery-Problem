@@ -36,7 +36,7 @@ public class Edge implements Comparable<Edge> {
 
 	public double length() {
 		return Math.sqrt(Math.pow(firstVertex.getY() - secondVertex.getY(), 2)
-				+ Math.pow((firstVertex.getX() - secondVertex.getX()), 2));
+			+ Math.pow((firstVertex.getX() - secondVertex.getX()), 2));
 	}
 
 	public Vertex getFirstVertex() {
@@ -109,6 +109,14 @@ public class Edge implements Comparable<Edge> {
 		return new Vertex(polygon, midX, midY);
 	}
 
+	public Vertex getUpperVertex() {
+		return firstVertex.getY() > secondVertex.getY() ? firstVertex : secondVertex;
+	}
+
+	public Vertex getLowerVertex() {
+		return firstVertex.getY() < secondVertex.getY() ? firstVertex : secondVertex;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof Edge)) {
@@ -125,29 +133,6 @@ public class Edge implements Comparable<Edge> {
 	@Override
 	public int hashCode() {
 		return Objects.hash(firstVertex, secondVertex);
-	}
-
-	public Edge getPreviousEdgeLinkedBy(Vertex v) {
-		if (!containsVertex(v)) {
-			throw new IllegalArgumentException("The vertex is not in the edge");
-		}
-
-//		ArrayList<Edge> edges = v.getInEdges();
-		ArrayList<Edge> edges = null; // TODO: fix this
-
-		assert edges.contains(this);
-		assert edges.size() == 2;
-
-		Edge e1 = edges.get(0);
-		Edge e2 = edges.get(1);
-
-		if (this == e1) {
-			return e2;
-		} else if (this == e2) {
-			return e1;
-		}
-
-		throw new RuntimeException("Oops");
 	}
 
 	@Override

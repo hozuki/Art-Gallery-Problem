@@ -153,12 +153,12 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 
 			}
 
-			for (Edge e : this.gallery.getTrapezoidalEdges()) {
-				drawVertex(g2d, e.getFirstVertex(), 4, Color.MAGENTA);
-				drawVertex(g2d, e.getSecondVertex(), 4, Color.MAGENTA);
-				drawEdge(g2d, e, 1, Color.MAGENTA);
-				drawEdgeLabel(g2d, e.getMidpoint(), Color.MAGENTA);
-			}
+//			for (Edge e : this.gallery.getTrapezoidalEdges()) {
+//				drawVertex(g2d, e.getFirstVertex(), 4, Color.MAGENTA);
+//				drawVertex(g2d, e.getSecondVertex(), 4, Color.MAGENTA);
+//				drawEdge(g2d, e, 1, Color.MAGENTA);
+//				drawEdgeLabel(g2d, e.getMidpoint(), Color.MAGENTA);
+//			}
 
 			if (gallery.showLegend()) {
 				drawLegend(g2d, w, h);
@@ -252,7 +252,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 			Vertex v = new Vertex(gallery.getGallery(), p.getCentroid()[0], p.getCentroid()[1]);
 			drawVertex(g2d, v, vertexSize, Color.GREEN);
 			for (Edge e : p.getEdges()) {
-				drawEdge(g2d, e, 2, new Color(0, 255, 0));
+				drawEdge(g2d, e, 2, new Color(255, 0, 0));
 			}
 		}
 
@@ -341,21 +341,25 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 		int dx = (int) (endDrag.getX() - startDrag.getX());
 		int dy = (int) (endDrag.getY() - startDrag.getY());
 
-		if (offsetX + dx > getSize().getWidth() / 3) {
-			offsetX = (int) (getSize().getWidth() / 3);
-		} else if (offsetX + dx < -getSize().getWidth() / 3) {
-			offsetX = (int) (-getSize().getWidth() / 3);
-		} else {
-			offsetX += dx;
-		}
+//		if (offsetX + dx > getSize().getWidth() / 3) {
+//			offsetX = (int) (getSize().getWidth() / 3);
+//		} else if (offsetX + dx < -getSize().getWidth() / 3) {
+//			offsetX = (int) (-getSize().getWidth() / 3);
+//		} else {
+//			offsetX += dx;
+//		}
+//
+//		if (offsetY + dy > getSize().getHeight() / 3) {
+//			offsetY = (int) (getSize().getHeight() / 3);
+//		} else if (offsetY + dy < -getSize().getHeight() / 3) {
+//			offsetY = (int) (-getSize().getHeight() / 3);
+//		} else {
+//			offsetY += dy;
+//		}
 
-		if (offsetY + dy > getSize().getHeight() / 3) {
-			offsetY = (int) (getSize().getHeight() / 3);
-		} else if (offsetY + dy < -getSize().getHeight() / 3) {
-			offsetY = (int) (-getSize().getHeight() / 3);
-		} else {
-			offsetY += dy;
-		}
+		offsetX += dx;
+		offsetY += dy;
+
 		repaint();
 	}
 

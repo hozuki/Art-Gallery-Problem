@@ -187,7 +187,7 @@ public final class GeometricAlgorithms {
 						t.insert(ei);
 						helper.put(ei, vi);
 					} else {
-						Edge ej = getFirstLeftEdge(polygon, vi);
+						Edge ej = getFirstLeftEdge(polygon, vi, t);
 
 						if (ej == null) {
 							throw new RuntimeException("Oops");
@@ -244,7 +244,7 @@ public final class GeometricAlgorithms {
 
 					t.remove(ei_m1);
 
-					Edge ej = getFirstLeftEdge(polygon, vi);
+					Edge ej = getFirstLeftEdge(polygon, vi, t);
 
 					if (ej != null) {
 						v = helper.get(ej);
@@ -253,6 +253,29 @@ public final class GeometricAlgorithms {
 
 						if (vt == VertexType.MERGE) {
 							breakPolygon(result, v, vi);
+						} else {
+//							if (vi.getOutEdge().getOtherVertex(vi).equals(v)) {
+//								// Degenerated case (remove this condition and check AGS5)
+//								Vertex otherV = ej.getOtherVertex(v);
+//
+//								if (otherV != null) {
+//									// AGS5
+//									vt = judgeVertexType(otherV);
+//
+//									if (vt == VertexType.MERGE) {
+//										breakPolygon(result, otherV, vi);
+//									}
+//								} else {
+//									// AGS4
+//									for (Vertex vv : new Vertex[]{ej.getUpperVertex(), ej.getLowerVertex()}) {
+//										vt = judgeVertexType(vv);
+//
+//										if (vt == VertexType.MERGE) {
+//											breakPolygon(result, vv, vi);
+//										}
+//									}
+//								}
+//							}
 						}
 
 						helper.put(ej, vi);
@@ -260,7 +283,7 @@ public final class GeometricAlgorithms {
 				}
 				break;
 				case SPLIT: {
-					Edge ej = getFirstLeftEdge(polygon, vi);
+					Edge ej = getFirstLeftEdge(polygon, vi, t);
 
 					if (ej != null) {
 						Vertex v = helper.get(ej);
@@ -280,6 +303,15 @@ public final class GeometricAlgorithms {
 		}
 
 		return result;
+	}
+
+	private static boolean inSamePolygon(ArrayList<Polygon> polygons, Vertex v1, Vertex v2) {
+		Optional<Polygon> resultOpt = polygons.stream().filter(poly -> {
+			ArrayList<Vertex> vertices = poly.getVerticesAndHoles();
+			return vertices.contains(v1) && vertices.contains(v2);
+		}).findFirst();
+
+		return resultOpt.isPresent();
 	}
 
 	private static void breakPolygon(ArrayList<Polygon> newPolygons, Vertex v1, Vertex v2) {
@@ -439,7 +471,7 @@ public final class GeometricAlgorithms {
 		}
 	}
 
-	private Edge getFirstLeftEdge(Polygon p, Vertex v) {
+	private Edge getFirstLeftEdge(Polygon p, Vertex v, AVLTree<Edge> tree) {
 		if (v.getInEdge().isHorizontal() || v.getOutEdge().isHorizontal()) {
 			return null;
 		}
@@ -454,6 +486,10 @@ public final class GeometricAlgorithms {
 
 		for (Edge edge : edges) {
 			if (edge.containsVertex(v)) {
+				continue;
+			}
+
+			if (!tree.contains(edge)) {
 				continue;
 			}
 
@@ -477,9 +513,20 @@ public final class GeometricAlgorithms {
 						Vertex newOther = edge.getOtherVertex(intersectionPoint);
 						Vertex oldOther = result.getOtherVertex(lastIntersection);
 
-						assert newOther.getX() != oldOther.getX();
+						assert Util.notEquals(newOther.getY(), oldOther.getY());
 
-						shouldUpdate = newOther.getX() > oldOther.getX();
+						if ((newOther.getY() >= intersectionPoint.getY() && oldOther.getY() >= intersectionPoint.getY()) ||
+							(newOther.getY() <= intersectionPoint.getY() && oldOther.getY() <= intersectionPoint.getY())) {
+							assert Util.notEquals(newOther.getX(), oldOther.getX());
+
+							// Degen case 1: v-shape
+							// Select the one on the right
+							shouldUpdate = newOther.getX() > oldOther.getX();
+						} else {
+							//Degen case 2: I-shape
+							// Select the bottom one
+							shouldUpdate = newOther.getY() < oldOther.getY();
+						}
 					}
 				}
 
