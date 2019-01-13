@@ -1,13 +1,7 @@
 package artgallery;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
+import java.awt.*;
 import java.awt.Polygon;
-import java.awt.RenderingHints;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -84,6 +78,8 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 		// Transform the Java coordinate system to the Cartesian system.
 		g2d.translate(w / 2 + offsetX, h / 2 + offsetY);
 		g2d.scale(scale, -scale);
+
+//		g2d.setFont(new Font("sans-serif", Font.PLAIN, -10));
 
 		if (this.gallery != null) {
 			// Draw base surface polygon for the gallery.
@@ -166,6 +162,7 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 
 			if (gallery.showLegend()) {
 				drawLegend(g2d, w, h);
+				drawVertexPositions(g2d, w, h);
 			}
 		}
 	}
@@ -320,7 +317,23 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 		g2d.drawString("Guard", (float) (w / 2 - 150), (float) (h / 2 - 38));
 		g2d.drawString("Thief", (float) (w / 2 - 150), (float) (h / 2 - 15));
 		g2d.scale(1, -1);
+	}
 
+	private void drawVertexPositions(Graphics2D g2d, double w, double h) {
+		if (false) {
+			g2d.scale(1, -1);
+
+			g2d.setColor(Color.WHITE);
+
+			for (final Vertex v : gallery.getGallery().getVerticesAndHoles()) {
+				final int x = (int) v.getX();
+				final int y = (int) (-v.getY());
+
+				g2d.drawString(String.format("(%.1f,%.1f)", v.getX(), v.getY()), x, y);
+			}
+
+			g2d.scale(1, -1);
+		}
 	}
 
 	private void panView(MouseEvent e) {

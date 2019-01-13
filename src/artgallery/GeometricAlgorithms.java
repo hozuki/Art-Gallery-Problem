@@ -55,8 +55,8 @@ public final class GeometricAlgorithms {
 		// Make a huge sweepline (edge) to test for intersections.
 		for (Vertex vertex : polygonVertices) {
 			Edge sweepLine = new Edge(fullPolygon,
-					new Vertex(fullPolygon, (int) (-Math.floor(fullPolygon.getMaxDistance())), vertex.getY()),
-					new Vertex(fullPolygon, (int) (Math.ceil(fullPolygon.getMaxDistance())), vertex.getY()));
+				new Vertex(fullPolygon, (int) (-Math.floor(fullPolygon.getMaxDistance())), vertex.getY()),
+				new Vertex(fullPolygon, (int) (Math.ceil(fullPolygon.getMaxDistance())), vertex.getY()));
 
 			// Check for edge intersections
 			ArrayList<Vertex> intersections = new ArrayList<>();
@@ -117,7 +117,8 @@ public final class GeometricAlgorithms {
 		final ArrayList<Polygon> monotones = makeMonotonePolygons(polygon);
 		final ArrayList<Polygon> triangles = new ArrayList<>();
 
-		for (final Polygon poly : monotones) {
+		for (int i = 0; i < monotones.size(); i++) {
+			Polygon poly = monotones.get(i);
 			final ArrayList<Polygon> tris = triangulateMonotonePolygon2(poly);
 
 			triangles.addAll(tris);
@@ -133,6 +134,7 @@ public final class GeometricAlgorithms {
 	 * @return A list of monotone polygons
 	 */
 	public ArrayList<Polygon> makeMonotonePolygons(final Polygon polygon) {
+		polygon.untiltHorizontals();
 		polygon.tiltHorizontals();
 
 		ArrayList<Vertex> vertexArray = new ArrayList<>(polygon.getVertices());
@@ -191,6 +193,8 @@ public final class GeometricAlgorithms {
 							throw new RuntimeException("Oops");
 						}
 
+						// Should return (-25,-124.9)-(-25,-200) @ vertex :-5(100,-124.9)
+						// instead, returned (-100,-125)-(-25,-124.9)
 						Vertex v = helper.get(ej);
 
 						VertexType vt = judgeVertexType(v);
@@ -313,10 +317,10 @@ public final class GeometricAlgorithms {
 			}
 
 			breakingHole = toBreak.getHoles()
-					.stream()
-					.filter(h -> h.getVertices().contains(v))
-					.findFirst()
-					.get();
+				.stream()
+				.filter(h -> h.getVertices().contains(v))
+				.findFirst()
+				.get();
 		}
 
 		if (shouldCreateNewPolygon) {
@@ -446,11 +450,40 @@ public final class GeometricAlgorithms {
 		Vertex lastIntersection = null;
 		Edge result = null;
 
-		for (Edge edge : p.getEdges()) {
+		ArrayList<Edge> edges = p.getEdgesAndHoles();
+
+		for (Edge edge : edges) {
+			if (edge.containsVertex(v)) {
+				continue;
+			}
+
 			Vertex intersectionPoint = getIntersectionPoint(line, edge);
 
 			if (intersectionPoint != null && intersectionPoint.getX() < v.getX()) {
-				if (result == null || computeDistance(v, intersectionPoint) < computeDistance(v, lastIntersection)) {
+				boolean shouldUpdate = false;
+
+				if (result == null) {
+					shouldUpdate = true;
+				} else {
+					double newDist = computeDistance(v, intersectionPoint);
+					double oldDist = computeDistance(v, lastIntersection);
+
+					if (newDist < oldDist) {
+						shouldUpdate = true;
+					} else if (Util.equals(newDist, oldDist)) {
+						// Rare case (see notes).
+						// That's why we can't filter out intersected points.
+						// Return the one with the other vertex more to the right.
+						Vertex newOther = edge.getOtherVertex(intersectionPoint);
+						Vertex oldOther = result.getOtherVertex(lastIntersection);
+
+						assert newOther.getX() != oldOther.getX();
+
+						shouldUpdate = newOther.getX() > oldOther.getX();
+					}
+				}
+
+				if (shouldUpdate) {
 					result = edge;
 					lastIntersection = intersectionPoint;
 				}
@@ -472,7 +505,7 @@ public final class GeometricAlgorithms {
 		Vertex v1 = neighbors.get(0);
 		Vertex v2 = neighbors.get(1);
 
-		boolean flat = v1.getY() == vi.getY() && v2.getY() == vi.getY();
+		boolean flat = Util.equals(v1.getY(), vi.getY()) && Util.equals(v2.getY(), vi.getY());
 		boolean allAbove = !flat && v1.getY() >= vi.getY() && v2.getY() >= vi.getY();
 		boolean allBelow = !flat && v1.getY() <= vi.getY() && v2.getY() <= vi.getY();
 
@@ -497,13 +530,13 @@ public final class GeometricAlgorithms {
 				return VertexType.END;
 			}
 		} else if (allBelow) {
-			if (a1 == 0) {
+			if (Util.equals(a1, 0)) {
 				a1 = Math.PI * 2;
 			} else {
 				a1 = (a1 + Math.PI * 2) % (Math.PI * 2);
 			}
 
-			if (a2 == 0) {
+			if (Util.equals(a2, 0)) {
 				a2 = Math.PI * 2;
 			} else {
 				a2 = (a2 + Math.PI * 2) % (Math.PI * 2);
@@ -552,7 +585,7 @@ public final class GeometricAlgorithms {
 			Vertex top = s.peek();
 
 			if ((leftChain.contains(uj) && rightChain.contains(top)) ||
-					(rightChain.contains(uj) && leftChain.contains(top))) {
+				(rightChain.contains(uj) && leftChain.contains(top))) {
 				while (!s.isEmpty()) {
 					Vertex v = s.pop();
 					boolean isLastOne = s.isEmpty();
@@ -718,7 +751,7 @@ public final class GeometricAlgorithms {
 					Vertex secondVertex = secondEdge.getOtherVertex(firstVertex);
 					for (Edge thirdEdge : edges) {
 						if (!thirdEdge.equals(secondEdge) && !thirdEdge.equals(firstEdge)
-								&& thirdEdge.containsVertex(secondVertex)) {
+							&& thirdEdge.containsVertex(secondVertex)) {
 							if (thirdEdge.containsVertex(firstEdge.getOtherVertex(firstVertex))) {
 								ArrayList<Edge> triangleEdges = new ArrayList<Edge>();
 								triangleEdges.add(firstEdge);
@@ -729,7 +762,7 @@ public final class GeometricAlgorithms {
 
 								if (!triangles.stream().anyMatch(t -> t.edgeMatch(triangle))) {
 									System.out.println("Adding triangle: " + firstEdge.getId() + " - "
-											+ secondEdge.getId() + " - " + thirdEdge.getId());
+										+ secondEdge.getId() + " - " + thirdEdge.getId());
 									triangles.add(triangle);
 								}
 							}
@@ -767,7 +800,7 @@ public final class GeometricAlgorithms {
 		ArrayList<Vertex> visibilityPolygonVertices = new ArrayList<Vertex>();
 		for (Edge sightLine : sightLines) {
 			PriorityQueue<Vertex> queue = new PriorityQueue<Vertex>(
-					(v1, v2) -> Double.compare(computeDistance(viewPoint, v1), computeDistance(viewPoint, v2)));
+				(v1, v2) -> Double.compare(computeDistance(viewPoint, v1), computeDistance(viewPoint, v2)));
 			for (Edge obstacle : obstacles) {
 				Vertex intersection = getIntersectionPoint(sightLine, obstacle);
 				if (intersection != null) {
@@ -825,7 +858,7 @@ public final class GeometricAlgorithms {
 				visibleVertices.add(vi);
 
 				List<Edge> incidentEdges = (List<Edge>) intersectedEdges.stream().filter(e -> e.containsVertex(vi))
-						.collect(Collectors.toList());
+					.collect(Collectors.toList());
 				for (Edge e : incidentEdges) {
 					// Get the other vertex (not "vi") of the incident edge
 					Vertex otherVertex = e.getOtherVertex(vi);
@@ -879,7 +912,7 @@ public final class GeometricAlgorithms {
 	// If the angles match (colinear) then prioritize the vertex closed to the
 	// reference.
 	public int compareAngleAndProximity(Vertex
-			                                    reference, Vertex v1, Vertex v2) {
+		                                    reference, Vertex v1, Vertex v2) {
 		int result = Double.compare(computeCCWAngle(v1, reference), computeCCWAngle(v2, reference));
 		if (result == 0) {
 			Double d1 = computeDistance(v1, reference);
@@ -909,7 +942,7 @@ public final class GeometricAlgorithms {
 
 		double denominator = ax * by - ay * bx;
 
-		if (denominator == 0)
+		if (Util.equals(denominator, 0))
 			return null;
 
 		double cx = x3 - x1;
@@ -939,15 +972,15 @@ public final class GeometricAlgorithms {
 		y4 = e2.getSecondVertex().getY();
 
 		double x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4))
-				/ ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+			/ ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
 		double y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4))
-				/ ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+			/ ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
 
 		return Math.sqrt(Math.pow(y - v.getY(), 2) + Math.pow((x - v.getX()), 2));
 	}
 
 	private int compareIntersectionDistance(Vertex
-			                                        v, Edge e, Edge e1, Edge e2) {
+		                                        v, Edge e, Edge e1, Edge e2) {
 		return Double.compare(getIntersectionDistance(v, e, e1), getIntersectionDistance(v, e, e2));
 	}
 
@@ -1004,11 +1037,52 @@ public final class GeometricAlgorithms {
 //			intersections.add(v);
 //		}
 
+		ArrayList<Vertex> vertices = p.getVerticesAndHoles();
 		ArrayList<Edge> edges = p.getEdgesAndHoles();
+
+		Set<Vertex> silentIntersections = new HashSet<>();
+
+		edgeLoop:
 		for (Edge edge : edges) {
 			Vertex intersectionPoint = getIntersectionPoint(line, edge);
 
-			if (intersectionPoint != null && !intersections.contains(intersectionPoint)) {
+			if (silentIntersections.contains(intersectionPoint)) {
+				continue;
+			}
+
+			if (intersections.contains(intersectionPoint)) {
+				continue;
+			}
+
+			if (intersectionPoint != null) {
+				for (final Vertex vi : vertices) {
+					if (!vi.equals(intersectionPoint)) {
+						continue;
+					}
+
+					List<Vertex> neighbors = vi.getNeighbors();
+
+					assert neighbors.size() == 2;
+
+					Vertex vn1 = neighbors.get(0);
+					Vertex vn2 = neighbors.get(1);
+
+					// Both above or below
+					if ((vn1.getY() > vi.getY() && vn2.getY() > vi.getY()) ||
+						(vn1.getY() < vi.getY() && vn2.getY() < vi.getY())) {
+						// Ignore this intersection
+						silentIntersections.add(v);
+						continue edgeLoop;
+					}
+
+					// One is horizontal, only count intersection once
+					if (Util.equals(vn1.getY(), vi.getY()) && Util.notEquals(vn2.getY(), vi.getY())) {
+						silentIntersections.add(vn1);
+					} else if (Util.equals(vn2.getY(), vi.getY()) && Util.notEquals(vn1.getY(), vi.getY())) {
+						silentIntersections.add(vn2);
+					}
+				}
+
 				intersections.add(intersectionPoint);
 			}
 		}
@@ -1019,8 +1093,8 @@ public final class GeometricAlgorithms {
 
 	private boolean areColinear(Vertex v1, Vertex v2, Vertex v3) {
 		double area = v1.getX() * (v2.getY() - v3.getY()) + v2.getX() * (v3.getY() - v1.getY())
-				+ v3.getX() * (v1.getY() - v2.getY());
-		return (area == 0);
+			+ v3.getX() * (v1.getY() - v2.getY());
+		return (Util.equals(area, 0));
 	}
 
 	private int orientation(Vertex p, Vertex q, Vertex r) {

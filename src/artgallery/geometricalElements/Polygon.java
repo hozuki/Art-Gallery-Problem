@@ -6,12 +6,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import artgallery.GeometricAlgorithms;
+import artgallery.Util;
 
 public class Polygon {
 
 	private ArrayList<Vertex> vertices = new ArrayList<Vertex>();
 	private ArrayList<Edge> edges = new ArrayList<Edge>();
 	private ArrayList<Hole> holes = new ArrayList<Hole>();
+	private ArrayList<Polygon> monotones = new ArrayList<>();
 	private ArrayList<Polygon> triangulation = new ArrayList<>();
 	private Map<Vertex, Integer> chainMap = new HashMap<Vertex, Integer>();
 
@@ -163,12 +165,16 @@ public class Polygon {
 		return triangulation;
 	}
 
+	public void setMonotones(ArrayList<Polygon> monotones) {
+		this.monotones = monotones;
+	}
+
 	public double getMaxDistance() {
 		double maxDistance = 0;
 		for (Vertex v1 : vertices) {
 			for (Vertex v2 : vertices) {
 				double tempDistance = Math
-						.sqrt(Math.pow(v1.getY() - v2.getY(), 2) + Math.pow((v1.getX() - v2.getX()), 2));
+					.sqrt(Math.pow(v1.getY() - v2.getY(), 2) + Math.pow((v1.getX() - v2.getX()), 2));
 				if (tempDistance > maxDistance) {
 					maxDistance = tempDistance;
 				}
@@ -205,13 +211,70 @@ public class Polygon {
 		}
 
 		final double tiltY = 0.1;
+		int startIndex = -1;
 
+		// First, start from a non-flat edge
 		for (int i = 0; i < vertices.size(); ++i) {
-			Vertex vi = vertices.get(i);
-			Vertex vx = vertices.get((i + 1) % vertices.size());
+			Vertex curr = vertices.get(i);
+			int iNext = (i + 1) % vertices.size();
+			Vertex next = vertices.get(iNext);
 
-			if (vi.getY() == vx.getY()) {
-				vx.setY(vx.getY() + tiltY);
+			if (Util.notEquals(next.getY(), curr.getY())) {
+				startIndex = iNext;
+				break;
+			}
+		}
+
+		if (startIndex < 0) {
+			throw new RuntimeException("Not expected");
+		}
+
+		final int endIndex = startIndex + vertices.size();
+
+		ArrayList<Vertex> verticesToTilt = new ArrayList<>();
+
+		for (int i = startIndex; i < endIndex; ) {
+			int currIndex = i % vertices.size();
+			int nextIndex = (currIndex + 1) % vertices.size();
+			Vertex curr = vertices.get(currIndex);
+			Vertex next = vertices.get(nextIndex);
+
+			verticesToTilt.clear();
+
+			verticesToTilt.add(curr);
+
+			while (Util.equals(next.getY(), curr.getY())) {
+				verticesToTilt.add(next);
+
+				currIndex = (currIndex + 1) % vertices.size();
+				nextIndex = (currIndex + 1) % vertices.size();
+				curr = vertices.get(currIndex);
+				next = vertices.get(nextIndex);
+			}
+
+			int skipCount = verticesToTilt.size();
+
+			if (skipCount > 1) {
+				int k = 0;
+
+				for (Vertex v : verticesToTilt) {
+					if (k % 2 == 1) {
+						v.setY(v.getY() + tiltY);
+					}
+					k = k + 1;
+				}
+			}
+
+			i = i + skipCount;
+		}
+
+		// Check v_1 and v_n
+		{
+			Vertex vs = vertices.get((startIndex - 1 + vertices.size()) % vertices.size());
+			Vertex vn = vertices.get((startIndex - 2 + vertices.size()) % vertices.size());
+
+			if (Util.equals(vs.getY(), vn.getY())) {
+				vs.setY(vs.getY() + tiltY);
 			}
 		}
 	}
