@@ -118,7 +118,7 @@ public final class GeometricAlgorithms {
 		final ArrayList<Polygon> triangles = new ArrayList<>();
 
 		for (final Polygon poly : monotones) {
-			final ArrayList<Polygon> tris = triangulateMonotonePolygon(poly);
+			final ArrayList<Polygon> tris = triangulateMonotonePolygon2(poly);
 
 			triangles.addAll(tris);
 		}
@@ -141,7 +141,7 @@ public final class GeometricAlgorithms {
 			vertexArray.addAll(hole.getVertices());
 		}
 
-		vertexArray.sort(GeometricAlgorithms::vertexComparator);
+		vertexArray.sort(Vertex.TOP_TO_BOTTOM_LEFT_TO_RIGHT);
 
 		AVLTree<Edge> t = new AVLTree<>();
 
@@ -278,7 +278,7 @@ public final class GeometricAlgorithms {
 		return result;
 	}
 
-	private void breakPolygon(ArrayList<Polygon> newPolygons, Vertex v1, Vertex v2) {
+	private static void breakPolygon(ArrayList<Polygon> newPolygons, Vertex v1, Vertex v2) {
 		Optional<Polygon> toBreakOpt = newPolygons.stream().filter(poly -> {
 			ArrayList<Vertex> vertices = poly.getVerticesAndHoles();
 			return vertices.contains(v1) && vertices.contains(v2);
@@ -523,13 +523,126 @@ public final class GeometricAlgorithms {
 		REGULAR, START, END, MERGE, SPLIT
 	}
 
-	private static int vertexComparator(final Vertex v1, final Vertex v2) {
-		int result = -Double.compare(v1.getY(), v2.getY());
+	/**
+	 * @param p A monotone polygon
+	 * @return Triangles
+	 */
+	private static ArrayList<Polygon> triangulateMonotonePolygon2(Polygon p) {
+		ArrayList<Vertex> u = new ArrayList<>(p.getVertices());
+		final int n = u.size();
 
-		if (result != 0) {
-			return result;
+		u.sort(Vertex.TOP_TO_BOTTOM_LEFT_TO_RIGHT);
+
+		ArrayList<Vertex> leftChain = new ArrayList<>();
+		ArrayList<Vertex> rightChain = new ArrayList<>();
+
+		findMonotoneChains(u, leftChain, rightChain);
+
+		Stack<Vertex> s = new Stack<>();
+
+		s.push(u.get(0));
+		s.push(u.get(1));
+
+		ArrayList<Polygon> d = new ArrayList<>();
+
+		d.add(p);
+
+		for (int j = 2; j < n - 1; ++j) {
+			Vertex uj = u.get(j);
+			Vertex top = s.peek();
+
+			if ((leftChain.contains(uj) && rightChain.contains(top)) ||
+					(rightChain.contains(uj) && leftChain.contains(top))) {
+				while (!s.isEmpty()) {
+					Vertex v = s.pop();
+					boolean isLastOne = s.isEmpty();
+
+					if (!isLastOne) {
+						breakPolygon(d, uj, v);
+					}
+				}
+
+				Vertex uj_m1 = u.get(j - 1);
+
+				s.push(uj_m1);
+				s.push(uj);
+			} else {
+				Vertex lastPopped = s.pop();
+
+				while (!s.isEmpty()) {
+					Vertex v2 = s.peek();
+
+					Edge diagonal = new Edge(p, uj, v2);
+					List<Vertex> intersections = edgeIntersectPolygon(diagonal, p);
+
+					if (intersections.size() < 2) {
+						throw new RuntimeException("Not expected");
+					}
+
+					if (intersections.size() != 2) {
+						break;
+					}
+
+					lastPopped = s.pop();
+
+					breakPolygon(d, uj, lastPopped);
+				}
+
+				s.push(lastPopped);
+
+				s.push(uj);
+			}
+		}
+
+		assert s.size() >= 2;
+
+		Vertex $_ = s.pop();
+		Vertex un = u.get(n - 1);
+
+		while (!s.isEmpty()) {
+			Vertex v = s.pop();
+			boolean isLastOne = s.isEmpty();
+
+			if (!isLastOne) {
+				breakPolygon(d, un, v);
+			}
+		}
+
+		return d;
+	}
+
+	private static void findMonotoneChains(ArrayList<Vertex> sorted, ArrayList<Vertex> left, ArrayList<Vertex> right) {
+		final Vertex top = sorted.get(0);
+		final Vertex bottom = sorted.get(sorted.size() - 1);
+
+		Vertex nextLeft = top.getOutEdge().getOtherVertex(top);
+
+		while (nextLeft != bottom) {
+			left.add(nextLeft);
+			nextLeft = nextLeft.getOutEdge().getOtherVertex(nextLeft);
+		}
+
+		Vertex nextRight = top.getInEdge().getOtherVertex(top);
+
+		while (nextRight != bottom) {
+			right.add(nextRight);
+			nextRight = nextRight.getInEdge().getOtherVertex(nextRight);
+		}
+
+		boolean leftOrRight = left.size() < right.size();
+
+		if (leftOrRight) {
+			left.add(0, top);
 		} else {
-			return Double.compare(v1.getX(), v2.getX());
+			right.add(0, top);
+		}
+
+		leftOrRight = left.size() < right.size();
+
+		if (leftOrRight) {
+			left.add(bottom);
+		} else {
+			right.add(bottom);
 		}
 	}
 
@@ -543,7 +656,7 @@ public final class GeometricAlgorithms {
 		ArrayList<Edge> triangulationEdges = monotonePolygon.getEdges();
 
 		// Sorts the vertices on Y-Descending order.
-		Collections.sort(triangulationVertices, (v1, v2) -> Double.compare(v2.getY(), v1.getY()));
+		triangulationVertices.sort((v1, v2) -> Double.compare(v2.getY(), v1.getY()));
 		monotonePolygon.constructChains();
 
 		// Implementation translation from the book.
@@ -776,7 +889,7 @@ public final class GeometricAlgorithms {
 		return result;
 	}
 
-	private Vertex getIntersectionPoint(Edge e1, Edge e2) {
+	private static Vertex getIntersectionPoint(Edge e1, Edge e2) {
 		assert e1.getPolygon() == e2.getPolygon();
 
 		double x1 = e1.getFirstVertex().getX();
@@ -862,7 +975,22 @@ public final class GeometricAlgorithms {
 		return boundingBox;
 	}
 
-	private boolean insidePolygon(Vertex v, Polygon p) {
+	private static List<Vertex> edgeIntersectPolygon(Edge e, Polygon p) {
+		ArrayList<Vertex> intersections = new ArrayList<>();
+		ArrayList<Edge> edges = p.getEdgesAndHoles();
+
+		for (Edge edge : edges) {
+			Vertex intersectionPoint = getIntersectionPoint(e, edge);
+
+			if (intersectionPoint != null && !intersections.contains(intersectionPoint)) {
+				intersections.add(intersectionPoint);
+			}
+		}
+
+		return intersections;
+	}
+
+	private static boolean insidePolygon(Vertex v, Polygon p) {
 		ArrayList<Vertex> intersections = new ArrayList<>();
 		Rectangle2D boundingBox = p.getBoundingBox();
 //		Vertex v1 = new Vertex(p, boundingBox.getMinX(), v.getY());

@@ -1,6 +1,7 @@
 package artgallery.geometricalElements;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -188,5 +189,15 @@ public class Vertex implements Comparable<Vertex> {
 	void setOutEdge(Edge e) {
 		outEdge = e;
 	}
+
+	public static final Comparator<Vertex> TOP_TO_BOTTOM_LEFT_TO_RIGHT = (final Vertex v1, final Vertex v2) -> {
+		int result = -Double.compare(v1.getY(), v2.getY());
+
+		if (result != 0) {
+			return result;
+		} else {
+			return Double.compare(v1.getX(), v2.getX());
+		}
+	};
 
 }

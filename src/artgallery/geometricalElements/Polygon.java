@@ -179,9 +179,10 @@ public class Polygon {
 
 	// Bad implementation of monotone-chains.
 	public void constructChains() {
-		tiltHorizontals();
+//		tiltHorizontals(); // already tilted
 
 		int top = 0;
+
 		for (int i = 0; i < vertices.size() - 1; ++i) {
 			if (vertices.get(i).getY() > vertices.get(top).getY()) {
 				top = i;
