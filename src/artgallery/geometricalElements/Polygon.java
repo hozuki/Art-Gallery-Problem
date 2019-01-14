@@ -64,6 +64,7 @@ public class Polygon {
 	}
 
 	public ArrayList<Vertex> getVerticesAndHoles() {
+		// TODO: if the polygon is frozen, this collection can actually be precomputed
 		ArrayList<Vertex> allVertices = new ArrayList<Vertex>(vertices);
 
 		for (Hole h : holes) {

@@ -147,7 +147,7 @@ public final class GeometricAlgorithms {
 
 		AVLTree<Edge> t = new AVLTree<>();
 
-		helper = new HashMap<>();
+		final Map<Edge, Vertex> helper = new HashMap<>();
 
 		ArrayList<Polygon> result = new ArrayList<>();
 
@@ -159,15 +159,80 @@ public final class GeometricAlgorithms {
 			Vertex vi = q.poll();
 			VertexType vertexType = judgeVertexType(vi);
 
-			switch (vertexType) {
-				case REGULAR: {
-					final double tiltX = 0.01;
+			System.out.println(String.format("MakeMonotone: visiting vertex %s (%s)", vi.toString(), vertexType.toString()));
 
-					// Compute whether the interior is to the right of vi
-					Vertex tempVertex = new Vertex(polygon, vi.getX() + tiltX, vi.getY());
-					boolean interiorIsToTheRight = insidePolygon(tempVertex, polygon);
+			try {
+				switch (vertexType) {
+					case REGULAR: {
+						final double tiltX = 0.01;
 
-					if (interiorIsToTheRight) {
+						// Compute whether the interior is to the right of vi
+						Vertex tempVertex = new Vertex(polygon, vi.getX() + tiltX, vi.getY());
+						boolean interiorIsToTheRight = insidePolygon(tempVertex, polygon);
+
+						if (interiorIsToTheRight) {
+							Edge ei_m1 = vi.getInEdge();
+
+							assert helper.containsKey(ei_m1);
+
+							Vertex v = helper.get(ei_m1);
+
+							VertexType vt = judgeVertexType(v);
+
+							if (vt == VertexType.MERGE) {
+								breakPolygon(result, v, vi);
+							}
+
+							t.remove(ei_m1);
+
+							Edge ei = vi.getOutEdge();
+
+							t.insert(ei);
+							helper.put(ei, vi);
+						} else {
+							Edge ej = getFirstLeftEdge(polygon, vi, t);
+
+							if (ej == null) {
+								throw new RuntimeException("Oops");
+							}
+
+							// Should return (-25,-124.9)-(-25,-200) @ vertex :-5(100,-124.9)
+							// instead, returned (-100,-125)-(-25,-124.9)
+							Vertex v = helper.get(ej);
+
+							VertexType vt = judgeVertexType(v);
+
+							if (vt == VertexType.MERGE) {
+								breakPolygon(result, v, vi);
+							}
+
+							helper.put(ej, vi);
+						}
+					}
+					break;
+					case START: {
+						Edge ei = vi.getOutEdge();
+						t.insert(ei);
+						helper.put(ei, vi);
+					}
+					break;
+					case END: {
+						Edge ei_m1 = vi.getInEdge();
+
+						assert helper.containsKey(ei_m1);
+
+						Vertex v = helper.get(ei_m1);
+
+						VertexType vt = judgeVertexType(v);
+
+						if (vt == VertexType.MERGE) {
+							breakPolygon(result, v, vi);
+						}
+
+						t.remove(ei_m1);
+					}
+					break;
+					case MERGE: {
 						Edge ei_m1 = vi.getInEdge();
 
 						assert helper.containsKey(ei_m1);
@@ -182,78 +247,16 @@ public final class GeometricAlgorithms {
 
 						t.remove(ei_m1);
 
-						Edge ei = vi.getOutEdge();
-
-						t.insert(ei);
-						helper.put(ei, vi);
-					} else {
 						Edge ej = getFirstLeftEdge(polygon, vi, t);
 
-						if (ej == null) {
-							throw new RuntimeException("Oops");
-						}
+						if (ej != null) {
+							v = helper.get(ej);
 
-						// Should return (-25,-124.9)-(-25,-200) @ vertex :-5(100,-124.9)
-						// instead, returned (-100,-125)-(-25,-124.9)
-						Vertex v = helper.get(ej);
+							vt = judgeVertexType(v);
 
-						VertexType vt = judgeVertexType(v);
-
-						if (vt == VertexType.MERGE) {
-							breakPolygon(result, v, vi);
-						}
-
-						helper.put(ej, vi);
-					}
-				}
-				break;
-				case START: {
-					Edge ei = vi.getOutEdge();
-					t.insert(ei);
-					helper.put(ei, vi);
-				}
-				break;
-				case END: {
-					Edge ei_m1 = vi.getInEdge();
-
-					assert helper.containsKey(ei_m1);
-
-					Vertex v = helper.get(ei_m1);
-
-					VertexType vt = judgeVertexType(v);
-
-					if (vt == VertexType.MERGE) {
-						breakPolygon(result, v, vi);
-					}
-
-					t.remove(ei_m1);
-				}
-				break;
-				case MERGE: {
-					Edge ei_m1 = vi.getInEdge();
-
-					assert helper.containsKey(ei_m1);
-
-					Vertex v = helper.get(ei_m1);
-
-					VertexType vt = judgeVertexType(v);
-
-					if (vt == VertexType.MERGE) {
-						breakPolygon(result, v, vi);
-					}
-
-					t.remove(ei_m1);
-
-					Edge ej = getFirstLeftEdge(polygon, vi, t);
-
-					if (ej != null) {
-						v = helper.get(ej);
-
-						vt = judgeVertexType(v);
-
-						if (vt == VertexType.MERGE) {
-							breakPolygon(result, v, vi);
-						} else {
+							if (vt == VertexType.MERGE) {
+								breakPolygon(result, v, vi);
+							} else {
 //							if (vi.getOutEdge().getOtherVertex(vi).equals(v)) {
 //								// Degenerated case (remove this condition and check AGS5)
 //								Vertex otherV = ej.getOtherVertex(v);
@@ -276,28 +279,32 @@ public final class GeometricAlgorithms {
 //									}
 //								}
 //							}
+							}
+
+							helper.put(ej, vi);
+						}
+					}
+					break;
+					case SPLIT: {
+						Edge ej = getFirstLeftEdge(polygon, vi, t);
+
+						if (ej != null) {
+							Vertex v = helper.get(ej);
+
+							breakPolygon(result, v, vi);
+
+							helper.put(ej, vi);
 						}
 
-						helper.put(ej, vi);
+						Edge ei = vi.getOutEdge();
+
+						t.insert(ei);
+						helper.put(ei, vi);
 					}
+					break;
 				}
-				break;
-				case SPLIT: {
-					Edge ej = getFirstLeftEdge(polygon, vi, t);
-
-					if (ej != null) {
-						Vertex v = helper.get(ej);
-
-						breakPolygon(result, v, vi);
-
-						helper.put(ej, vi);
-					}
-
-					Edge ei = vi.getOutEdge();
-
-					t.insert(ei);
-					helper.put(ei, vi);
-				}
+			} catch (Exception e) {
+				e.printStackTrace();
 				break;
 			}
 		}
@@ -315,8 +322,23 @@ public final class GeometricAlgorithms {
 	}
 
 	private static void breakPolygon(ArrayList<Polygon> newPolygons, Vertex v1, Vertex v2) {
+		breakPolygon(newPolygons, v1, v2, false);
+	}
+
+	private static void breakPolygon(ArrayList<Polygon> newPolygons, Vertex v1, Vertex v2, boolean debug) {
+		System.out.println(String.format("Connecting %s to %s", v1.toString(), v2.toString()));
+
 		Optional<Polygon> toBreakOpt = newPolygons.stream().filter(poly -> {
 			ArrayList<Vertex> vertices = poly.getVerticesAndHoles();
+
+			if (debug) {
+				System.out.println("-------");
+
+				for (Vertex v : vertices) {
+					System.out.println(v.toString());
+				}
+			}
+
 			return vertices.contains(v1) && vertices.contains(v2);
 		}).findFirst();
 
@@ -348,11 +370,16 @@ public final class GeometricAlgorithms {
 				throw new RuntimeException("Not possible");
 			}
 
-			breakingHole = toBreak.getHoles()
+			Optional<Hole> breakingHoleOpt = toBreak.getHoles()
 				.stream()
 				.filter(h -> h.getVertices().contains(v))
-				.findFirst()
-				.get();
+				.findFirst();
+
+			if (!breakingHoleOpt.isPresent()) {
+				throw new RuntimeException("Query vertex is not on the hole");
+			}
+
+			breakingHole = breakingHoleOpt.get();
 		}
 
 		if (shouldCreateNewPolygon) {
@@ -361,8 +388,10 @@ public final class GeometricAlgorithms {
 			ArrayList<Vertex> boundaryVertices1 = new ArrayList<>();
 			ArrayList<Vertex> boundaryVertices2 = new ArrayList<>();
 
-			int v1Index = vertices.indexOf(v1);
-			int v2Index = vertices.indexOf(v2);
+			final Tuple<Integer, Integer> indices = findProperV1V2Indices(toBreak, vertices, v1, v2);
+
+			final int v1Index = indices.item1;
+			final int v2Index = indices.item2;
 
 			assert v1Index != v2Index;
 
@@ -376,19 +405,20 @@ public final class GeometricAlgorithms {
 				iter2End = v1Index + vertexCount;
 			}
 
+			p1 = new Polygon();
+			p2 = new Polygon();
+
 			for (int i = v1Index; i <= iter1End; i = i + 1) {
 				int k = i % vertexCount;
-				boundaryVertices1.add(vertices.get(k).clone());
+				boundaryVertices1.add(vertices.get(k).clone(p1));
 			}
 
 			for (int i = v2Index; i <= iter2End; i = i + 1) {
 				int k = i % vertexCount;
-				boundaryVertices2.add(vertices.get(k).clone());
+				boundaryVertices2.add(vertices.get(k).clone(p2));
 			}
 
-			p1 = new Polygon();
 			p1.setVertices(boundaryVertices1);
-			p2 = new Polygon();
 			p2.setVertices(boundaryVertices2);
 		} else {
 			// Connect the boundary and the hole
@@ -410,15 +440,16 @@ public final class GeometricAlgorithms {
 			assert boundaryIndex >= 0;
 			assert holeIndex >= 0;
 
+			p1 = new Polygon();
+
 			for (int i = boundaryIndex; i <= boundaryIndex + toBreak.getVertices().size(); ++i) {
-				vertices.add(toBreak.getVertices().get(i % toBreak.getVertices().size()).clone());
+				vertices.add(toBreak.getVertices().get(i % toBreak.getVertices().size()).clone(p1));
 			}
 
 			for (int i = holeIndex; i <= holeIndex + breakingHole.getVertices().size(); ++i) {
-				vertices.add(breakingHole.getVertices().get(i % breakingHole.getVertices().size()).clone());
+				vertices.add(breakingHole.getVertices().get(i % breakingHole.getVertices().size()).clone(p1));
 			}
 
-			p1 = new Polygon();
 			p1.setVertices(vertices);
 		}
 
@@ -471,7 +502,110 @@ public final class GeometricAlgorithms {
 		}
 	}
 
-	private Edge getFirstLeftEdge(Polygon p, Vertex v, AVLTree<Edge> tree) {
+	// Problematic on AGS14, OK on other cases
+	private static Tuple<Integer, Integer> findProperV1V2IndicesNaive(List<Vertex> vertices, Vertex v1, Vertex v2) {
+		int v1Index = vertices.indexOf(v1);
+		int v2Index = vertices.indexOf(v2);
+
+		assert v1Index >= 0;
+		assert v2Index >= 0;
+
+		assert v1Index != v2Index;
+
+		return new Tuple<>(v1Index, v2Index);
+	}
+
+	private static Tuple<Integer, Integer> findProperV1V2Indices(Polygon p, List<Vertex> vertices, Vertex v1, Vertex v2) {
+		long v1Count = vertices.parallelStream().filter(v -> v.equals(v1)).count();
+		long v2Count = vertices.parallelStream().filter(v -> v.equals(v2)).count();
+		int v1Index, v2Index;
+
+		assert (v1Count == 1 || v1Count == 2) && (v2Count == 1 || v2Count == 2);
+
+		if (v1Count == 1 && v2Count == 1) {
+			// Breaking a raw polygon (simple case)
+			v1Index = vertices.indexOf(v1);
+			assert v1Index >= 0;
+			v2Index = vertices.indexOf(v2);
+			assert v2Index >= 0;
+		} else if ((v1Count == 1 && v2Count == 2) || (v2Count == 1 && v1Count == 2)) {
+			// At least one of the vertices is broken by connecting boundary and a hole
+			final Vertex vOne, vTwoPivot;
+
+			if (v1Count == 1) {
+				vOne = v1;
+				vTwoPivot = v2;
+			} else {
+				vOne = v2;
+				vTwoPivot = v1;
+			}
+
+			// Connect to the vTwo with lower edges (because we are sweeping from top to bottom)
+			final Vertex[] vTwos = vertices.stream().filter(v -> v.equals(vTwoPivot)).toArray(Vertex[]::new);
+
+			assert vTwos.length == 2;
+
+			final double vTwo1Y = vTwos[0].getNeighbors().get(0).getY() + vTwos[0].getNeighbors().get(1).getY();
+			final double vTwo2Y = vTwos[1].getNeighbors().get(0).getY() + vTwos[1].getNeighbors().get(1).getY();
+			final double vTwo1X = vTwos[0].getNeighbors().get(0).getX() + vTwos[0].getNeighbors().get(1).getX();
+			final double vTwo2X = vTwos[1].getNeighbors().get(0).getX() + vTwos[1].getNeighbors().get(1).getX();
+
+			Vertex vToTilt;
+
+			// Tilt the top-left one
+			if (Util.notEquals(vTwo1Y, vTwo2Y)) {
+				vToTilt = vTwo1Y > vTwo2Y ? vTwos[0] : vTwos[1];
+			} else {
+				assert Util.notEquals(vTwo1X, vTwo2X);
+				vToTilt = vTwo1X < vTwo2X ? vTwos[0] : vTwos[1];
+			}
+
+			// TODO: What about (e1 is horizontal) || (e1 is vertical) || (e2 is horizontal) || (e2 is vertical)?
+			//       Will require X-and-Y tilting on a non-intersect direction!
+			final double tiltY = 0.01;
+			Edge tempEdge = new Edge(p, vOne, new Vertex(p, vToTilt.getX(), vToTilt.getY() + tiltY));
+
+			List<Vertex> intersections = edgeIntersectPolygon(tempEdge, p);
+
+			final Vertex vTwo;
+
+			if (intersections.isEmpty()) {
+				vTwo = vToTilt;
+			} else {
+				// If there is at least one intersection, if we choose it as vTwo,
+				// it will cause self intersection after breaking this polygon.
+				// Here we need reference comparison.
+				vTwo = vToTilt == vTwos[0] ? vTwos[1] : vTwos[0];
+			}
+
+			if (Objects.equals(vOne, v1)) {
+				v1Index = vertices.indexOf(vOne);
+				v2Index = Util.indexOfReference(vertices, vTwo);
+			} else {
+				v1Index = Util.indexOfReference(vertices, vTwo);
+				v2Index = vertices.indexOf(vOne);
+			}
+		} else {
+			throw new RuntimeException("Not expected");
+		}
+
+		return new Tuple<>(v1Index, v2Index);
+	}
+
+	private static final class Tuple<E1, E2> {
+
+		public final E1 item1;
+
+		public final E2 item2;
+
+		public Tuple(final E1 element1, final E2 e2) {
+			this.item1 = element1;
+			this.item2 = e2;
+		}
+
+	}
+
+	private static Edge getFirstLeftEdge(Polygon p, Vertex v, AVLTree<Edge> tree) {
 		if (v.getInEdge().isHorizontal() || v.getOutEdge().isHorizontal()) {
 			return null;
 		}
@@ -539,8 +673,6 @@ public final class GeometricAlgorithms {
 
 		return result;
 	}
-
-	private Map<Edge, Vertex> helper;
 
 	private static VertexType judgeVertexType(Vertex vi) {
 		ArrayList<Vertex> neighbors = vi.getNeighbors();
@@ -950,11 +1082,11 @@ public final class GeometricAlgorithms {
 		return true;
 	}
 
-	private double computeDistance(Vertex v1, Vertex v2) {
+	private static double computeDistance(Vertex v1, Vertex v2) {
 		return Math.sqrt(Math.pow(v1.getY() - v2.getY(), 2) + Math.pow((v1.getX() - v2.getX()), 2));
 	}
 
-	private double computeCCWAngle(Vertex v, Vertex reference) {
+	private static double computeCCWAngle(Vertex v, Vertex reference) {
 		double deltaX = v.getX() - reference.getX();
 		double deltaY = v.getY() - reference.getY();
 		double angle = Math.toDegrees(Math.atan2(deltaY, deltaX));
@@ -966,8 +1098,7 @@ public final class GeometricAlgorithms {
 	// Comparison based on the angle
 	// If the angles match (colinear) then prioritize the vertex closed to the
 	// reference.
-	public int compareAngleAndProximity(Vertex
-		                                    reference, Vertex v1, Vertex v2) {
+	public static int compareAngleAndProximity(Vertex reference, Vertex v1, Vertex v2) {
 		int result = Double.compare(computeCCWAngle(v1, reference), computeCCWAngle(v2, reference));
 		if (result == 0) {
 			Double d1 = computeDistance(v1, reference);
@@ -1014,7 +1145,7 @@ public final class GeometricAlgorithms {
 		return new Vertex(e1.getPolygon(), (x1 + t * ax), (y1 + t * ay));
 	}
 
-	private double getIntersectionDistance(Vertex v, Edge e1, Edge e2) {
+	private static double getIntersectionDistance(Vertex v, Edge e1, Edge e2) {
 		double x1, x2, x3, x4, y1, y2, y3, y4;
 
 		x1 = e1.getFirstVertex().getX();
@@ -1034,12 +1165,11 @@ public final class GeometricAlgorithms {
 		return Math.sqrt(Math.pow(y - v.getY(), 2) + Math.pow((x - v.getX()), 2));
 	}
 
-	private int compareIntersectionDistance(Vertex
-		                                        v, Edge e, Edge e1, Edge e2) {
+	private static int compareIntersectionDistance(Vertex v, Edge e, Edge e1, Edge e2) {
 		return Double.compare(getIntersectionDistance(v, e, e1), getIntersectionDistance(v, e, e2));
 	}
 
-	private Polygon computeBoundingBox(Polygon p) {
+	private static Polygon computeBoundingBox(Polygon p) {
 		double minX, minY, maxX, maxY;
 		minX = minY = Integer.MAX_VALUE;
 		maxX = maxY = Integer.MIN_VALUE;
@@ -1146,13 +1276,13 @@ public final class GeometricAlgorithms {
 		return intersections.size() % 2 == 1;
 	}
 
-	private boolean areColinear(Vertex v1, Vertex v2, Vertex v3) {
+	private static boolean areColinear(Vertex v1, Vertex v2, Vertex v3) {
 		double area = v1.getX() * (v2.getY() - v3.getY()) + v2.getX() * (v3.getY() - v1.getY())
 			+ v3.getX() * (v1.getY() - v2.getY());
 		return (Util.equals(area, 0));
 	}
 
-	private int orientation(Vertex p, Vertex q, Vertex r) {
+	private static int orientation(Vertex p, Vertex q, Vertex r) {
 		double val = (q.getY() - p.getY()) * (r.getX() - q.getX()) - (q.getX() - p.getX()) * (r.getY() - q.getY());
 		if (val < 0) {
 			return 0; // colinear

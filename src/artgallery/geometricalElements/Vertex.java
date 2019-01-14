@@ -1,8 +1,9 @@
 package artgallery.geometricalElements;
 
+import artgallery.Util;
+
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 
 public class Vertex implements Comparable<Vertex> {
@@ -109,10 +110,7 @@ public class Vertex implements Comparable<Vertex> {
 	}
 
 	public boolean isNeighbor(Vertex v) {
-		if (neighbors.contains(v)) {
-			return true;
-		}
-		return false;
+		return neighbors.contains(v);
 	}
 
 	public boolean isOnBoundary() {
@@ -138,12 +136,11 @@ public class Vertex implements Comparable<Vertex> {
 		}
 
 		if (o instanceof Vertex) {
-
-			if (Math.abs(this.X - ((Vertex) o).getX()) < 0.01 && Math.abs(this.Y - ((Vertex) o).getY()) < 0.01) {
-				return true;
-			}
+			final Vertex v = (Vertex) o;
+			return Util.equals(getX(), v.getX()) && Util.equals(getY(), v.getY());
+		} else {
+			return false;
 		}
-		return false;
 	}
 
 	@Override
@@ -156,7 +153,7 @@ public class Vertex implements Comparable<Vertex> {
 		if (this.equals(o)) {
 			return 0;
 		} else {
-			return Double.compare(this.X, ((Vertex) o).getX());
+			return Double.compare(this.X, o.getX());
 		}
 	}
 

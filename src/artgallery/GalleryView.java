@@ -323,8 +323,12 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 	}
 
 	private void drawVertexPositions(Graphics2D g2d, double w, double h) {
-		if (false) {
+		if (true) {
+			Paint paint = g2d.getPaint();
+
 			g2d.scale(1, -1);
+			g2d.translate(offsetX, offsetY);
+			g2d.scale(scale, scale);
 
 			g2d.setColor(Color.WHITE);
 
@@ -335,7 +339,8 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 				g2d.drawString(String.format("(%.1f,%.1f)", v.getX(), v.getY()), x, y);
 			}
 
-			g2d.scale(1, -1);
+//			g2d.scale(1, -1);
+			g2d.setPaint(paint);
 		}
 	}
 

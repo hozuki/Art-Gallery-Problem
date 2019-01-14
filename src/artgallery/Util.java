@@ -1,5 +1,8 @@
 package artgallery;
 
+import java.util.List;
+import java.util.Objects;
+
 public final class Util {
 
 	private Util() {
@@ -20,6 +23,18 @@ public final class Util {
 
 	public static boolean notEquals(double d1, double d2, double delta) {
 		return !equals(d1, d2, delta);
+	}
+
+	public static <E> int indexOfReference(final List<E> list, final E o) {
+		final int listSize = list.size();
+
+		for (int i = 0; i < listSize; ++i) {
+			if (list.get(i) == o) {
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 	public static final double DOUBLE_DELTA = 0.000000001;

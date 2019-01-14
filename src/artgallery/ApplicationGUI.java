@@ -360,7 +360,7 @@ public class ApplicationGUI implements Runnable {
 			//fileNumber = fileName.charAt(fileName.length() - 1);
 			Polygon galleryPolygon = new Polygon();
 
-			int fileNumber = 4;
+			int fileNumber = 14;
 			String fileName = "AGS";
 			try {
 				txtAreaStatus.append("Attempting to load gallery file [" + paths(directory, fileName + fileNumber) + "]\n");
