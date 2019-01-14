@@ -821,6 +821,8 @@ public final class GeometricAlgorithms {
 		return triangles;
 	}
 
+	// Simple visibility algorithm based on testing each vertex around the viewpoint.
+	// Not finished and somewhat buggy on edge-cases.
 	public ArrayList<Polygon> computeVisibilityPolygon(Vertex viewPoint, Polygon p) {
 		// Array of triangles comprising the visibility polygon
 		ArrayList<Polygon> visiblePolygons = new ArrayList<Polygon>();
@@ -830,6 +832,8 @@ public final class GeometricAlgorithms {
 		ArrayList<Vertex> visibleVertices = p.getVerticesAndHoles();
 		visibleVertices.remove(viewPoint);
 		visibleVertices.sort((v1, v2) -> compareAngleAndProximity(viewPoint, v1, v2));
+
+		visibleVertices.add(visibleVertices.get(0)); // Make it a full circle
 
 		// Extend sightlines (edges) from the viewpoint into each of the scene
 		// vertices.
@@ -851,8 +855,11 @@ public final class GeometricAlgorithms {
 			for (Edge obstacle : obstacles) {
 				Vertex intersection = getIntersectionPoint(sightLine, obstacle);
 				if (intersection != null) {
-					visibilityPolygonVertices.add(intersection);
+					queue.offer(intersection);
 				}
+			}
+			if (!queue.isEmpty()) {
+				visibilityPolygonVertices.add(queue.poll());
 			}
 		}
 
@@ -874,9 +881,10 @@ public final class GeometricAlgorithms {
 	 * M. Berg , page 328. Input: Point P, set of polygonal obstacles S. Output:
 	 * The set of visible vertices from P.
 	 */
+	// Not currently working and the subroutine wasn't implemented.
 	private ArrayList<Vertex> visibleVertices(Vertex v, Polygon p) {
 		// 1) Sort the obstacle vertices according to the clockwise angle that
-		// the halfline from p to each vertex makes with the positive x-axis.
+		// the half-line from p to each vertex makes with the positive x-axis.
 		ArrayList<Vertex> obstacleVertices = p.getVerticesAndHoles();
 		obstacleVertices.sort((v1, v2) -> compareAngleAndProximity(v, v1, v2));
 

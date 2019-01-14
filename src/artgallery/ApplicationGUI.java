@@ -129,13 +129,13 @@ public class ApplicationGUI implements Runnable {
 		JPanel informationPanel = new JPanel();
 		informationPanel.setBounds(5, 0, 215, 220);
 		informationPanel
-				.setBorder(new TitledBorder(null, "Information", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+			.setBorder(new TitledBorder(null, "Information", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		informationPanel.setLayout(null);
 
 		JPanel geometryInformation = new JPanel();
 		geometryInformation.setBounds(10, 21, 198, 123);
 		geometryInformation
-				.setBorder(new TitledBorder(null, "Geometry", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+			.setBorder(new TitledBorder(null, "Geometry", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		informationPanel.add(geometryInformation);
 		geometryInformation.setLayout(null);
 
@@ -218,7 +218,7 @@ public class ApplicationGUI implements Runnable {
 		JPanel actorInformation = new JPanel();
 		actorInformation.setBounds(10, 145, 198, 63);
 		actorInformation
-				.setBorder(new TitledBorder(null, "Actors", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+			.setBorder(new TitledBorder(null, "Actors", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		informationPanel.add(actorInformation);
 		actorInformation.setLayout(null);
 
@@ -286,7 +286,7 @@ public class ApplicationGUI implements Runnable {
 		JPanel panel_2 = new JPanel();
 		panel_2.setLayout(null);
 		panel_2.setBorder(
-				new TitledBorder(null, "Display Options", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+			new TitledBorder(null, "Display Options", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		panel_2.setBounds(6, 110, 202, 90);
 		optionsPanel.add(panel_2);
 
@@ -360,7 +360,7 @@ public class ApplicationGUI implements Runnable {
 			//fileNumber = fileName.charAt(fileName.length() - 1);
 			Polygon galleryPolygon = new Polygon();
 
-			int fileNumber = 13;
+			int fileNumber = 4;
 			String fileName = "AGS";
 			try {
 				txtAreaStatus.append("Attempting to load gallery file [" + paths(directory, fileName + fileNumber) + "]\n");
@@ -401,7 +401,7 @@ public class ApplicationGUI implements Runnable {
 						}
 					} else if (count > 3 && count <= 3 + n) {
 						Vertex tempVertex = new Vertex(galleryPolygon, Integer.parseInt(values[0]), Integer.parseInt(values[1]),
-								count - 3, Integer.parseInt(values[2]), Integer.parseInt(values[3]));
+							count - 3, Integer.parseInt(values[2]), Integer.parseInt(values[3]));
 						vertices.add(tempVertex);
 					} else {
 						Hole hole = holes.get(lastHole);
@@ -411,7 +411,7 @@ public class ApplicationGUI implements Runnable {
 							hole = holes.get(lastHole);
 						}
 						Vertex tempVertex = new Vertex(galleryPolygon, Integer.parseInt(values[0]), Integer.parseInt(values[1]),
-								count - 3, Integer.parseInt(values[2]), 0);
+							count - 3, Integer.parseInt(values[2]), 0);
 						hole.addVertex(tempVertex);
 
 					}
@@ -430,7 +430,7 @@ public class ApplicationGUI implements Runnable {
 				galleryPolygon.fixVertexNeighbors();
 
 				txtAreaStatus.append("File succesfully loaded!\n");
-				this.gallery = new GalleryModel(galleryPolygon, t);
+				this.gallery = new GalleryModel(galleryPolygon, t, this.gallery);
 
 			} catch (FileNotFoundException e) {
 				txtAreaStatus.append("No gallery structure file could be found with that name :(\n");
@@ -479,7 +479,7 @@ public class ApplicationGUI implements Runnable {
 						guards.get(currentGuard).setRouteLength(routeLength);
 					} else {
 						RoutePoint tempPoint = new RoutePoint(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
-								Integer.parseInt(values[2]), Integer.parseInt(values[3]));
+							Integer.parseInt(values[2]), Integer.parseInt(values[3]));
 						guards.get(currentGuard).addPointToRoute(tempPoint);
 					}
 					count++;
@@ -517,7 +517,7 @@ public class ApplicationGUI implements Runnable {
 						thieves.add(new Thief());
 					} else {
 						RoutePoint tempPoint = new RoutePoint(Integer.parseInt(values[0]), Integer.parseInt(values[1]),
-								Integer.parseInt(values[2]), 1);
+							Integer.parseInt(values[2]), 1);
 						thieves.get(0).addPointToRoute(tempPoint);
 					}
 					count++;
@@ -542,7 +542,7 @@ public class ApplicationGUI implements Runnable {
 		}
 
 		refreshCanvas();
-		resetControls();
+//		resetControls();
 		enableControls();
 	}
 

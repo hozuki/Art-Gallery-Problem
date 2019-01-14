@@ -143,14 +143,17 @@ public class GalleryView extends JPanel implements MouseListener, MouseMotionLis
 			}
 			if (gallery.showVisibility()) {
 				//Vertex viewer = gallery.getGallery().getVertices().get(5);
-				ArrayList<artgallery.geometricalElements.Polygon> guardView = gallery.computeGuardVisibility(0);
-				Color copBlue = new Color(255, 200, 10, 120);
+				int numGuards = gallery.getGuards().size();
 
-				for (artgallery.geometricalElements.Polygon visibleTriangle : guardView) {
-					drawArea(g2d, visibleTriangle, copBlue);
-					visibleTriangle.getVertices().forEach(v -> drawVertex(g2d, v, 8, Color.ORANGE));
+				for (int i = 0; i < numGuards; ++i) {
+					ArrayList<artgallery.geometricalElements.Polygon> guardView = gallery.computeGuardVisibility(i);
+					Color copBlue = new Color(255, 200, 10, 120);
+
+					for (artgallery.geometricalElements.Polygon visibleTriangle : guardView) {
+						drawArea(g2d, visibleTriangle, copBlue);
+						visibleTriangle.getVertices().forEach(v -> drawVertex(g2d, v, 8, Color.ORANGE));
+					}
 				}
-
 			}
 
 //			for (Edge e : this.gallery.getTrapezoidalEdges()) {

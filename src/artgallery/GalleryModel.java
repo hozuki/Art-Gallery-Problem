@@ -25,8 +25,21 @@ public class GalleryModel {
 	}
 
 	public GalleryModel(Polygon polygon, int globalTime) {
+		this(polygon, globalTime, null);
+	}
+
+	public GalleryModel(Polygon polygon, int globalTime, GalleryModel original) {
 		this.setGallery(polygon);
 		this.setGlobalTime(globalTime);
+
+		if (original != null) {
+			this.actors = original.actors;
+			this.guardsPaths = original.guardsPaths;
+			this.legend = original.legend;
+			this.thievesPaths = original.thievesPaths;
+			this.triangulation = original.triangulation;
+			this.visibility = original.visibility;
+		}
 	}
 
 	public Polygon getGallery() {
