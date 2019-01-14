@@ -530,6 +530,7 @@ public final class GeometricAlgorithms {
 			assert v2Index >= 0;
 		} else if ((v1Count == 1 && v2Count == 2) || (v2Count == 1 && v1Count == 2)) {
 			// At least one of the vertices is broken by connecting boundary and a hole
+			// Case: AGS14 (385,231)-(297,240) then error on (385,231)-(309,212)
 			final Vertex vOne, vTwoPivot;
 
 			if (v1Count == 1) {
@@ -767,6 +768,9 @@ public final class GeometricAlgorithms {
 				(rightChain.contains(uj) && leftChain.contains(top))) {
 				while (!s.isEmpty()) {
 					Vertex v = s.pop();
+					if (v.getX() == 682 && v.getY() == 234) {
+						int i = 32;
+					}
 					boolean isLastOne = s.isEmpty();
 
 					if (!isLastOne) {
@@ -784,6 +788,10 @@ public final class GeometricAlgorithms {
 				while (!s.isEmpty()) {
 					Vertex v2 = s.peek();
 
+					if (v2.getX() == 682 && v2.getY() == 234) {
+						int i = 32;
+					}
+
 					Edge diagonal = new Edge(p, uj, v2);
 					List<Vertex> intersections = edgeIntersectPolygon(diagonal, p);
 
@@ -792,12 +800,40 @@ public final class GeometricAlgorithms {
 					}
 
 					if (intersections.size() != 2) {
+						// Intersects with other edge
 						break;
+					}
+
+					{
+						// Test whether the edge is out of the polygon (AGS14)
+						Vertex tilted;
+						final double tiltLength = 0.1;
+
+						if (diagonal.isVertical()) {
+							if (diagonal.getFirstVertex().getY() < diagonal.getSecondVertex().getY()) {
+								tilted = new Vertex(p, diagonal.getFirstVertex().getX(), diagonal.getFirstVertex().getY() + tiltLength);
+							} else {
+								tilted = new Vertex(p, diagonal.getFirstVertex().getX(), diagonal.getFirstVertex().getY() - tiltLength);
+							}
+						} else {
+							final double slope = diagonal.getSlope();
+							final double cos = 1 / Math.sqrt(1 + slope * slope);
+							final double sin = slope * cos;
+
+							final double tiltX = tiltLength * cos;
+							final double tiltY = tiltLength * sin;
+
+							tilted = new Vertex(p, diagonal.getFirstVertex().getX() + tiltX, diagonal.getFirstVertex().getY() + tiltY);
+						}
+
+						if (!insidePolygon(tilted, p)) {
+							break;
+						}
 					}
 
 					lastPopped = s.pop();
 
-					breakPolygon(d, uj, lastPopped);
+					breakPolygon(d, uj, v2);
 				}
 
 				s.push(lastPopped);

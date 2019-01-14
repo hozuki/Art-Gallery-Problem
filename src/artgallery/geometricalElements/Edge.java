@@ -1,5 +1,7 @@
 package artgallery.geometricalElements;
 
+import artgallery.Util;
+
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -35,8 +37,9 @@ public class Edge implements Comparable<Edge> {
 	}
 
 	public double length() {
-		return Math.sqrt(Math.pow(firstVertex.getY() - secondVertex.getY(), 2)
-			+ Math.pow((firstVertex.getX() - secondVertex.getX()), 2));
+		return Math.sqrt(
+			Math.pow(firstVertex.getY() - secondVertex.getY(), 2) +
+				Math.pow((firstVertex.getX() - secondVertex.getX()), 2));
 	}
 
 	public Vertex getFirstVertex() {
@@ -76,7 +79,19 @@ public class Edge implements Comparable<Edge> {
 	}
 
 	public boolean isHorizontal() {
-		return firstVertex.getY() == secondVertex.getY();
+		return Util.equals(firstVertex.getY(), secondVertex.getY());
+	}
+
+	public boolean isVertical() {
+		return Util.equals(firstVertex.getX(), secondVertex.getX());
+	}
+
+	public double getSlope() {
+		if (isVertical()) {
+			return firstVertex.getY() < secondVertex.getY() ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+		} else {
+			return (secondVertex.getY() - firstVertex.getY()) / (secondVertex.getX() - firstVertex.getX());
+		}
 	}
 
 	public void addNeighbor(Edge e) {
