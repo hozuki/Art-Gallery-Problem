@@ -801,9 +801,6 @@ public final class GeometricAlgorithms {
 				(rightChain.contains(uj) && leftChain.contains(top))) {
 				while (!s.isEmpty()) {
 					Vertex v = s.pop();
-					if (v.getX() == 682 && v.getY() == 234) {
-						int i = 32;
-					}
 					boolean isLastOne = s.isEmpty();
 
 					if (!isLastOne) {
@@ -821,18 +818,15 @@ public final class GeometricAlgorithms {
 				while (!s.isEmpty()) {
 					Vertex v2 = s.peek();
 
-					if (v2.getX() == 682 && v2.getY() == 234) {
-						int i = 32;
-					}
-
 					Edge diagonal = new Edge(p, uj, v2);
 					List<Vertex> intersections = edgeIntersectPolygon(diagonal, p);
 
-					if (intersections.size() < 2) {
+					if (intersections.size() < 1) {
+						// AGS13 has #(intersections)=1
 						throw new RuntimeException("Not expected");
 					}
 
-					if (intersections.size() != 2) {
+					if (intersections.size() > 2) {
 						// Intersects with other edge
 						break;
 					}
@@ -842,21 +836,30 @@ public final class GeometricAlgorithms {
 						Vertex tilted;
 						final double tiltLength = 0.1;
 
+						final Vertex first = diagonal.getFirstVertex();
+						final Vertex second = diagonal.getSecondVertex();
+
 						if (diagonal.isVertical()) {
-							if (diagonal.getFirstVertex().getY() < diagonal.getSecondVertex().getY()) {
-								tilted = new Vertex(p, diagonal.getFirstVertex().getX(), diagonal.getFirstVertex().getY() + tiltLength);
+							if (first.getY() < second.getY()) {
+								tilted = new Vertex(p, first.getX(), first.getY() + tiltLength);
 							} else {
-								tilted = new Vertex(p, diagonal.getFirstVertex().getX(), diagonal.getFirstVertex().getY() - tiltLength);
+								tilted = new Vertex(p, first.getX(), first.getY() - tiltLength);
 							}
 						} else {
 							final double slope = diagonal.getSlope();
-							final double cos = 1 / Math.sqrt(1 + slope * slope);
+							double cos = 1 / Math.sqrt(1 + slope * slope);
+
+							if (second.getX() < first.getX()) {
+								// PI to 3/2*PI
+								cos = -cos;
+							}
+
 							final double sin = slope * cos;
 
 							final double tiltX = tiltLength * cos;
 							final double tiltY = tiltLength * sin;
 
-							tilted = new Vertex(p, diagonal.getFirstVertex().getX() + tiltX, diagonal.getFirstVertex().getY() + tiltY);
+							tilted = new Vertex(p, first.getX() + tiltX, first.getY() + tiltY);
 						}
 
 						if (!insidePolygon(tilted, p)) {
