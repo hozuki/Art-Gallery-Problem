@@ -124,7 +124,40 @@ public final class GeometricAlgorithms {
 			triangles.addAll(tris);
 		}
 
-		return triangles;
+		final ArrayList<Polygon> legalTriangles = postprocessTiltedTriangles(triangles);
+
+		return legalTriangles;
+	}
+
+	private ArrayList<Polygon> postprocessTiltedTriangles(final ArrayList<Polygon> triangles) {
+		for (final Polygon p : triangles) {
+			if (p.getVertices().size() != 3 || p.getEdges().size() != 3) {
+				throw new RuntimeException("At least one polygon in the result is not triangle");
+			}
+
+			if (p.getHoles().size() > 0) {
+				throw new RuntimeException("Why are there holes in triangles?");
+			}
+		}
+
+		for (final Polygon p : triangles) {
+			p.untiltHorizontals();
+		}
+
+		ArrayList<Polygon> result = new ArrayList<>();
+
+		for (final Polygon p : triangles) {
+			final List<Vertex> vertices = p.getVertices();
+
+			if (Util.equals(vertices.get(0).getY(), vertices.get(1).getY()) &&
+				Util.equals(vertices.get(1).getY(), vertices.get(2).getY())) {
+				// Illegal triangle
+			} else {
+				result.add(p);
+			}
+		}
+
+		return result;
 	}
 
 	/**
