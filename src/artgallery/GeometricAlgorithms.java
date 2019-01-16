@@ -1048,7 +1048,7 @@ public final class GeometricAlgorithms {
 			int endY = (int) (viewPoint.getY() + (Math.sin(Math.toRadians(angle)) * p.getMaxDistance()));
 			Vertex endOfLine = new Vertex(p, endX, endY);
 			sightLines.add(new Edge(p, viewPoint, endOfLine));
-			System.out.println(w.getId() + " - " + angle);
+//			System.out.println(w.getId() + " - " + angle);
 		}
 
 		ArrayList<Edge> obstacles = p.getEdgesAndHoles();
@@ -1280,7 +1280,7 @@ public final class GeometricAlgorithms {
 		return intersections;
 	}
 
-	private static boolean insidePolygon(Vertex v, Polygon p) {
+	public static boolean insidePolygon(Vertex v, Polygon p) {
 		ArrayList<Vertex> intersections = new ArrayList<>();
 		Rectangle2D boundingBox = p.getBoundingBox();
 //		Vertex v1 = new Vertex(p, boundingBox.getMinX(), v.getY());

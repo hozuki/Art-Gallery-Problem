@@ -630,6 +630,28 @@ public class ApplicationGUI implements Runnable {
 				advanceActors();
 				canvas.repaint();
 
+				ArrayList<Guard> guards = gallery.getGuards();
+
+				for (int guardI = 0; guardI < guards.size(); guardI++) {
+					Guard guard = guards.get(guardI);
+					for (final Polygon p : guard.getVisibilityPolygon()) {
+						ArrayList<Thief> thieves = gallery.getThieves();
+
+						for (int thiefI = 0; thiefI < thieves.size(); thiefI++) {
+							final Thief thief = thieves.get(thiefI);
+							final Vertex v = new Vertex(p, thief.getX(), thief.getY());
+
+							if (GeometricAlgorithms.insidePolygon(v, p)) {
+								txtAreaStatus.append(String.format(
+									"Oops, robber #%d (%d, %d) got seen by guard #%d at (%d, %d)\n",
+									thiefI, thief.getX(), thief.getY(),
+									guardI, guard.getX(), guard.getY()
+								));
+							}
+						}
+					}
+				}
+
 				timeDiff = System.currentTimeMillis() - beforeTime;
 				sleep = 10 - timeDiff;
 
